@@ -2,7 +2,7 @@ from flask import Blueprint, render_template, request, jsonify, redirect, url_fo
 from flask_login import login_required, current_user
 from database import db, peru_now
 from models.personero import Colegio, Mesa, Personero
-from datetime import datetime, timedelta
+from datetime import datetime
 import user_agents
 
 main_bp = Blueprint("main", __name__)
@@ -150,33 +150,16 @@ def api_personeros():
 def api_stats():
     hoy = peru_now().date()
 
-    total_hoy = Personero.query.filter(
-        db.func.date(Personero.fecha_registro) == hoy
-    ).count()
-    total_general = Personero.query.count()
-    presentes_hoy = Personero.query.filter(
-        db.func.date(Personero.fecha_registro) == hoy,
-        Personero.estado == "PRESENTE"
-    ).count()
-    ausentes_hoy = Personero.query.filter(
-        db.func.date(Personero.fecha_registro) == hoy,
-        Personero.estado == "AUSENTE"
-    ).count()
-    pendientes_hoy = Personero.query.filter(
-        db.func.date(Personero.fecha_registro) == hoy,
-        Personero.estado == "PENDIENTE"
-    ).count()
-    colegios_con_personeros = db.session.query(
-        db.func.count(db.distinct(Personero.colegio_id))
-    ).filter(db.func.date(Personero.fecha_registro) == hoy).scalar() or 0
-    mesas_con_personeros = db.session.query(
-        db.func.count(db.distinct(Personero.mesa_id))
-    ).filter(db.func.date(Personero.fecha_registro) == hoy).scalar() or 0
+    stats = db.session.query(
+        db.func.count(Personero.id).label("total_hoy"),
+        db.func.count(db.case((Personero.estado == "PRESENTE", 1))).label("presentes"),
+        db.func.count(db.case((Personero.estado == "AUSENTE", 1))).label("ausentes"),
+        db.func.count(db.case((Personero.estado == "PENDIENTE", 1))).label("pendientes"),
+        db.func.count(db.distinct(Personero.colegio_id)).label("colegios"),
+        db.func.count(db.distinct(Personero.mesa_id)).label("mesas"),
+    ).filter(db.func.date(Personero.fecha_registro) == hoy).first()
 
-    ultima_hora = peru_now() - timedelta(hours=1)
-    registros_recientes = Personero.query.filter(
-        Personero.fecha_registro >= ultima_hora
-    ).count()
+    total_general = Personero.query.count()
 
     por_partido = db.session.query(
         Personero.partido_politico, db.func.count(Personero.id)
@@ -184,29 +167,21 @@ def api_stats():
         db.func.count(Personero.id).desc()
     ).all()
 
-    por_colegio = db.session.query(
-        Colegio.nombre, db.func.count(Personero.id)
-    ).join(Personero, Colegio.id == Personero.colegio_id).filter(
-        db.func.date(Personero.fecha_registro) == hoy
-    ).group_by(Colegio.nombre).order_by(
-        db.func.count(Personero.id).desc()
-    ).all()
-
     ultimos = Personero.query.order_by(
         Personero.fecha_registro.desc()
-    ).limit(15).all()
+    ).limit(10).all()
 
     return jsonify({
-        "total_hoy": total_hoy,
+        "total_hoy": stats.total_hoy if stats else 0,
         "total_general": total_general,
-        "presentes_hoy": presentes_hoy,
-        "ausentes_hoy": ausentes_hoy,
-        "pendientes_hoy": pendientes_hoy,
-        "colegios_con_personeros": colegios_con_personeros,
-        "mesas_con_personeros": mesas_con_personeros,
-        "registros_recientes": registros_recientes,
+        "presentes_hoy": stats.presentes if stats else 0,
+        "ausentes_hoy": stats.ausentes if stats else 0,
+        "pendientes_hoy": stats.pendientes if stats else 0,
+        "colegios_con_personeros": stats.colegios if stats else 0,
+        "mesas_con_personeros": stats.mesas if stats else 0,
+        "registros_recientes": 0,
         "por_partido": {p: c for p, c in por_partido},
-        "por_colegio": {c: n for c, n in por_colegio},
+        "por_colegio": {},
         "ultimos": [p.to_dict() for p in ultimos],
     })
 

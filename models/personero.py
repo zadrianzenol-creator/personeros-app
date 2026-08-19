@@ -56,6 +56,10 @@ class Mesa(db.Model):
 
 class Personero(db.Model):
     __tablename__ = "personeros"
+    __table_args__ = (
+        db.Index("idx_fecha_estado", "fecha_registro", "estado"),
+        db.Index("idx_colegio_fecha", "colegio_id", "fecha_registro"),
+    )
 
     id = db.Column(db.Integer, primary_key=True)
     codigo = db.Column(db.String(20), unique=True, nullable=False, index=True)
