@@ -54,6 +54,16 @@ def registrar():
             flash("Este código ya está registrado.", "error")
             return render_template(template, colegios=colegios, form_data=request.form)
 
+        dni_en_mesa = Personero.query.filter_by(dni=dni, mesa_id=mesa_id).first()
+        if dni_en_mesa:
+            flash("Este DNI ya está registrado en esta mesa.", "error")
+            return render_template(template, colegios=colegios, form_data=request.form)
+
+        dni_en_colegio = Personero.query.filter_by(dni=dni, colegio_id=colegio_id).first()
+        if dni_en_colegio:
+            flash("Este DNI ya está registrado en este colegio.", "error")
+            return render_template(template, colegios=colegios, form_data=request.form)
+
         now = peru_now()
         personero = Personero(
             codigo=codigo,
