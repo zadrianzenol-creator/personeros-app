@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+{% block title %}Registrar Personero{% endblock %}
+{% block page_title %}Registro de Personero{% endblock %}
+
+{% block content %}
+<div class="form-card">
+    <h2>
+        <i class="fas fa-user-plus" style="color: var(--accent-light);"></i>
+        Registrar Nuevo Personero
+    </h2>
+
+    <form method="POST" action="{{ url_for('main.registrar') }}">
+        <div class="form-section">
+            <div class="form-section-title"><i class="fas fa-id-card"></i> Datos de Identificación</div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Código <span class="req">*</span></label>
+                    <input type="text" name="codigo" placeholder="Ej: PER-012345" value="{{ form_data.get('codigo', '') }}" required style="text-transform:uppercase;">
+                </div>
+                <div class="form-group">
+                    <label>DNI <span class="req">*</span></label>
+                    <input type="text" name="dni" placeholder="Ej: 12345678" maxlength="12" value="{{ form_data.get('dni', '') }}" required>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Nombre Completo <span class="req">*</span></label>
+                <input type="text" name="nombre_completo" placeholder="Ej: Juan Pérez López" value="{{ form_data.get('nombre_completo', '') }}" required>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Teléfono</label>
+                    <input type="text" name="telefono" placeholder="Ej: 912345678" maxlength="20" value="{{ form_data.get('telefono', '') }}">
+                </div>
+                <div class="form-group">
+                    <label>Partido Político <span class="req">*</span></label>
+                    <input type="text" name="partido_politico" placeholder="Ej: Partido XYZ" value="{{ form_data.get('partido_politico', '') }}" required>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Rol</label>
+                <select name="rol">
+                    <option value="Personero" {{ 'selected' if form_data.get('rol') == 'Personero' }}>Personero</option>
+                    <option value="Suplente" {{ 'selected' if form_data.get('rol') == 'Suplente' }}>Suplente</option>
+                    <option value="Apoderado" {{ 'selected' if form_data.get('rol') == 'Apoderado' }}>Apoderado</option>
+                    <option value="Observador" {{ 'selected' if form_data.get('rol') == 'Observador' }}>Observador</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="form-section">
+            <div class="form-section-title"><i class="fas fa-school"></i> Ubicación de Votación</div>
+            <div class="form-group">
+                <label>Colegio / Local <span class="req">*</span></label>
+                <select name="colegio_id" id="colegioSelect" required>
+                    <option value="">Seleccione un colegio...</option>
+                    {% for c in colegios %}
+                    <option value="{{ c.id }}" {{ 'selected' if form_data.get('colegio_id')|int == c.id }}>
+                        {{ c.nombre }}{% if c.distrito %} — {{ c.distrito }}{% endif %}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Mesa <span class="req">*</span></label>
+                    <select name="mesa_id" id="mesaSelect" required>
+                        <option value="">Seleccione colegio primero...</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Nro. Mesa <span class="req">*</span></label>
+                    <input type="number" name="numero_mesa" id="numeroMesa" placeholder="Ej: 5" value="{{ form_data.get('numero_mesa', '') }}" required min="1">
+                </div>
+            </div>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-save"></i> Registrar Personero
+            </button>
+            <a href="{{ url_for('main.dashboard') }}" class="btn btn-secondary">
+                <i class="fas fa-times"></i> Cancelar
+            </a>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.getElementById('colegioSelect').addEventListener('change', function() {
+    const colegioId = this.value;
+    const mesaSelect = document.getElementById('mesaSelect');
+    mesaSelect.innerHTML = '<option value="">Cargando...</option>';
+    if (!colegioId) {
+        mesaSelect.innerHTML = '<option value="">Seleccione colegio primero...</option>';
+        return;
+    }
+    fetch('/api/mesas/' + colegioId)
+        .then(r => r.json())
+        .then(mesas => {
+            mesaSelect.innerHTML = '<option value="">Seleccione mesa...</option>';
+            mesas.forEach(m => {
+                const opt = document.createElement('option');
+                opt.value = m.id;
+                opt.textContent = 'Mesa ' + m.numero;
+                mesaSelect.appendChild(opt);
+            });
+        });
+});
+
+document.getElementById('mesaSelect').addEventListener('change', function() {
+    const num = this.options[this.selectedIndex]?.textContent?.replace('Mesa ', '').trim();
+    if (num) document.getElementById('numeroMesa').value = num;
+});
+</script>
+{% endblock %}

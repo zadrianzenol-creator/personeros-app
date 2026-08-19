@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#6366f1">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Personeros">
+    <meta name="description" content="Registro de asistencia de personeros electorales">
+    <title>Registrar Personero</title>
+    <link rel="manifest" href="/static/manifest.json">
+    <link rel="apple-touch-icon" href="/static/img/icon-192.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/mobile.css') }}">
+</head>
+<body class="mobile-app">
+
+    <div class="mobile-header">
+        <a href="/" class="back-btn"><i class="fas fa-arrow-left"></i></a>
+        <span class="app-title">Registro de Personero</span>
+        <div class="logo-mini"><i class="fas fa-clipboard-check"></i></div>
+    </div>
+
+    <div id="offlineBanner" class="offline-banner" style="display:none;">
+        <i class="fas fa-wifi-slash"></i> Sin conexión — Los datos se enviarán cuando haya internet
+    </div>
+
+    <div id="installBanner" class="install-banner" style="display:none;">
+        <div class="install-icon"><i class="fas fa-download"></i></div>
+        <div class="install-text">
+            <div class="install-title">Instalar App</div>
+            <div class="install-subtitle">Añadir a pantalla de inicio</div>
+        </div>
+        <button class="install-btn" onclick="installApp()">Instalar</button>
+        <button class="dismiss-btn" onclick="dismissInstall()"><i class="fas fa-times"></i></button>
+    </div>
+
+    <div class="mobile-form" id="formContainer">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        {% for category, message in messages %}
+        <div class="toast toast-{{ category }}" onclick="this.remove()">
+            <i class="fas fa-{% if category == 'success' %}check-circle{% else %}times-circle{% endif %}"></i>
+            {{ message }}
+        </div>
+        {% endfor %}
+        {% endif %}
+        {% endwith %}
+
+        <form method="POST" action="{{ url_for('main.registrar') }}" id="registroForm">
+            <div class="mobile-card">
+                <div class="card-header">
+                    <div class="card-icon" style="background: rgba(99,102,241,0.15); color: #818cf8;">
+                        <i class="fas fa-id-card"></i>
+                    </div>
+                    <div>
+                        <div class="card-title">Identificación</div>
+                        <div class="card-subtitle">Datos personales del personero</div>
+                    </div>
+                </div>
+
+                <div class="mobile-field">
+                    <label>Código <span class="req">*</span></label>
+                    <div class="input-icon">
+                        <i class="fas fa-barcode"></i>
+                        <input type="text" name="codigo" id="codigo" placeholder="PER-012345" required style="text-transform:uppercase; font-family:monospace; font-weight:700; font-size:1.1rem;">
+                    </div>
+                </div>
+
+                <div class="mobile-field">
+                    <label>Nombre Completo <span class="req">*</span></label>
+                    <div class="input-icon">
+                        <i class="fas fa-user"></i>
+                        <input type="text" name="nombre_completo" placeholder="Ej: Juan Pérez López" required>
+                    </div>
+                </div>
+
+                <div class="mobile-field">
+                    <label>DNI <span class="req">*</span></label>
+                    <div class="input-icon">
+                        <i class="fas fa-fingerprint"></i>
+                        <input type="text" name="dni" placeholder="Ej: 12345678" maxlength="12" required inputmode="numeric">
+                    </div>
+                </div>
+
+                <div class="mobile-field">
+                    <label>Teléfono</label>
+                    <div class="input-icon">
+                        <i class="fas fa-phone"></i>
+                        <input type="tel" name="telefono" placeholder="Ej: 912345678" inputmode="tel">
+                    </div>
+                </div>
+
+                <div class="mobile-field">
+                    <label>Partido Político <span class="req">*</span></label>
+                    <div class="input-icon">
+                        <i class="fas fa-landmark"></i>
+                        <input type="text" name="partido_politico" placeholder="Ej: Partido Político XYZ" required>
+                    </div>
+                </div>
+
+                <div class="mobile-field">
+                    <label>Rol</label>
+                    <select name="rol">
+                        <option value="Personero">Personero</option>
+                        <option value="Suplente">Suplente</option>
+                        <option value="Apoderado">Apoderado</option>
+                        <option value="Observador">Observador</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="mobile-card">
+                <div class="card-header">
+                    <div class="card-icon" style="background: rgba(6,182,212,0.15); color: #67e8f9;">
+                        <i class="fas fa-school"></i>
+                    </div>
+                    <div>
+                        <div class="card-title">Ubicación de Votación</div>
+                        <div class="card-subtitle">Colegio y mesa asignada</div>
+                    </div>
+                </div>
+
+                <div class="mobile-field">
+                    <label>Colegio / Local <span class="req">*</span></label>
+                    <select name="colegio_id" id="colegioSelect" required>
+                        <option value="">Seleccione un colegio...</option>
+                        {% for c in colegios %}
+                        <option value="{{ c.id }}">{{ c.nombre }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="mobile-field">
+                    <label>Mesa <span class="req">*</span></label>
+                    <select name="mesa_id" id="mesaSelect" required>
+                        <option value="">Seleccione colegio primero...</option>
+                    </select>
+                </div>
+
+                <div class="mobile-field">
+                    <label>Nro. Mesa <span class="req">*</span></label>
+                    <input type="number" name="numero_mesa" id="numeroMesa" placeholder="Ej: 5" required min="1" inputmode="numeric">
+                </div>
+            </div>
+
+            <button type="submit" class="mobile-btn mobile-btn-primary" id="submitBtn">
+                <i class="fas fa-paper-plane"></i> Registrar Asistencia
+            </button>
+        </form>
+    </div>
+
+    <div class="mobile-form" id="successContainer" style="display:none;">
+        <div class="mobile-card success-card">
+            <div class="success-icon">
+                <i class="fas fa-check"></i>
+            </div>
+            <h2>¡Registro Exitoso!</h2>
+            <p>El personero ha sido registrado correctamente</p>
+
+            <div class="success-details" id="successDetails">
+                <div class="success-detail-row">
+                    <span class="success-detail-label">Código</span>
+                    <span class="success-detail-value" id="detailCodigo">—</span>
+                </div>
+                <div class="success-detail-row">
+                    <span class="success-detail-label">Nombre</span>
+                    <span class="success-detail-value" id="detailNombre">—</span>
+                </div>
+                <div class="success-detail-row">
+                    <span class="success-detail-label">Mesa</span>
+                    <span class="success-detail-value" id="detailMesa">—</span>
+                </div>
+                <div class="success-detail-row">
+                    <span class="success-detail-label">Local</span>
+                    <span class="success-detail-value" id="detailColegio">—</span>
+                </div>
+                <div class="success-detail-row">
+                    <span class="success-detail-label">Estado</span>
+                    <span class="success-detail-value" style="color:#6ee7b7;">PENDIENTE</span>
+                </div>
+                <div class="success-detail-row">
+                    <span class="success-detail-label">Incidente</span>
+                    <span class="success-detail-value">NINGUNO</span>
+                </div>
+            </div>
+
+            <button class="mobile-btn mobile-btn-primary" onclick="resetForm()" style="margin-bottom:12px;">
+                <i class="fas fa-plus"></i> Registrar Otro
+            </button>
+            <a href="/" class="mobile-btn mobile-btn-secondary">
+                <i class="fas fa-chart-pie"></i> Ver Dashboard
+            </a>
+        </div>
+    </div>
+
+    <nav class="bottom-nav">
+        <a href="/" class="nav-item">
+            <i class="fas fa-chart-pie"></i>
+            <span>Dashboard</span>
+        </a>
+        <a href="/registrar" class="nav-item active">
+            <i class="fas fa-user-plus"></i>
+            <span>Registrar</span>
+        </a>
+    </nav>
+
+    <script>
+        // SERVICE WORKER
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/static/js/sw.js')
+                .then(reg => console.log('SW registered'))
+                .catch(err => console.log('SW error'));
+        }
+
+        // PWA INSTALL
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            document.getElementById('installBanner').style.display = 'flex';
+        });
+
+        function installApp() {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then((choiceResult) => {
+                    if (choiceResult.outcome === 'accepted') {
+                        document.getElementById('installBanner').style.display = 'none';
+                    }
+                    deferredPrompt = null;
+                });
+            }
+        }
+
+        function dismissInstall() {
+            document.getElementById('installBanner').style.display = 'none';
+        }
+
+        // OFFLINE DETECTION
+        function updateOnlineStatus() {
+            const banner = document.getElementById('offlineBanner');
+            if (!navigator.onLine) {
+                banner.style.display = 'block';
+            } else {
+                banner.style.display = 'none';
+            }
+        }
+        window.addEventListener('online', updateOnlineStatus);
+        window.addEventListener('offline', updateOnlineStatus);
+        updateOnlineStatus();
+
+        // MESAS AUTOLOAD
+        document.getElementById('colegioSelect').addEventListener('change', function() {
+            const colegioId = this.value;
+            const mesaSelect = document.getElementById('mesaSelect');
+            mesaSelect.innerHTML = '<option value="">Cargando...</option>';
+            if (!colegioId) {
+                mesaSelect.innerHTML = '<option value="">Seleccione colegio primero...</option>';
+                return;
+            }
+            fetch('/api/mesas/' + colegioId)
+                .then(r => r.json())
+                .then(mesas => {
+                    mesaSelect.innerHTML = '<option value="">Seleccione mesa...</option>';
+                    mesas.forEach(m => {
+                        const opt = document.createElement('option');
+                        opt.value = m.id;
+                        opt.textContent = 'Mesa ' + m.numero;
+                        mesaSelect.appendChild(opt);
+                    });
+                })
+                .catch(() => {
+                    mesaSelect.innerHTML = '<option value="">Error al cargar</option>';
+                });
+        });
+
+        document.getElementById('mesaSelect').addEventListener('change', function() {
+            const num = this.options[this.selectedIndex]?.textContent?.replace('Mesa ', '').trim();
+            if (num) document.getElementById('numeroMesa').value = num;
+        });
+
+        // FORM SUBMIT VIA AJAX
+        document.getElementById('registroForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const form = this;
+            const btn = document.getElementById('submitBtn');
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Registrando...';
+            btn.disabled = true;
+
+            const formData = new FormData(form);
+
+            fetch('/registrar', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.text())
+            .then(html => {
+                if (html.includes('Registro Exitoso') || html.includes('exitosamente')) {
+                    const codigo = formData.get('codigo');
+                    const nombre = formData.get('nombre_completo');
+                    const mesa = formData.get('numero_mesa');
+                    const colegioSelect = document.getElementById('colegioSelect');
+                    const colegioNombre = colegioSelect.options[colegioSelect.selectedIndex]?.text || '';
+
+                    document.getElementById('detailCodigo').textContent = codigo;
+                    document.getElementById('detailNombre').textContent = nombre;
+                    document.getElementById('detailMesa').textContent = 'Mesa ' + mesa;
+                    document.getElementById('detailColegio').textContent = colegioNombre;
+
+                    document.getElementById('formContainer').style.display = 'none';
+                    document.getElementById('successContainer').style.display = 'block';
+
+                    showToast('Personero registrado exitosamente', 'success');
+                } else {
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(html, 'text/html');
+                    const alerts = doc.querySelectorAll('.alert');
+                    alerts.forEach(a => showToast(a.textContent.trim(), 'error'));
+
+                    const formContainer = document.getElementById('formContainer');
+                    const newForm = doc.querySelector('#formContainer') || doc.querySelector('.mobile-form');
+                    if (newForm) {
+                        formContainer.innerHTML = newForm.innerHTML;
+                        reattachListeners();
+                    }
+                }
+            })
+            .catch(() => {
+                showToast('Error de conexión. Intente nuevamente.', 'error');
+            })
+            .finally(() => {
+                btn.innerHTML = '<i class="fas fa-paper-plane"></i> Registrar Asistencia';
+                btn.disabled = false;
+            });
+        });
+
+        function resetForm() {
+            document.getElementById('formContainer').style.display = 'block';
+            document.getElementById('successContainer').style.display = 'none';
+            document.getElementById('registroForm').reset();
+            document.getElementById('mesaSelect').innerHTML = '<option value="">Seleccione colegio primero...</option>';
+        }
+
+        function reattachListeners() {
+            document.getElementById('colegioSelect')?.addEventListener('change', function() {
+                const colegioId = this.value;
+                const mesaSelect = document.getElementById('mesaSelect');
+                mesaSelect.innerHTML = '<option value="">Cargando...</option>';
+                if (!colegioId) {
+                    mesaSelect.innerHTML = '<option value="">Seleccione colegio primero...</option>';
+                    return;
+                }
+                fetch('/api/mesas/' + colegioId)
+                    .then(r => r.json())
+                    .then(mesas => {
+                        mesaSelect.innerHTML = '<option value="">Seleccione mesa...</option>';
+                        mesas.forEach(m => {
+                            const opt = document.createElement('option');
+                            opt.value = m.id;
+                            opt.textContent = 'Mesa ' + m.numero;
+                            mesaSelect.appendChild(opt);
+                        });
+                    });
+            });
+
+            document.getElementById('mesaSelect')?.addEventListener('change', function() {
+                const num = this.options[this.selectedIndex]?.textContent?.replace('Mesa ', '').trim();
+                if (num) document.getElementById('numeroMesa').value = num;
+            });
+        }
+
+        function showToast(message, type) {
+            const existing = document.querySelector('.toast');
+            if (existing) existing.remove();
+
+            const toast = document.createElement('div');
+            toast.className = 'toast toast-' + type;
+            toast.innerHTML = '<i class="fas fa-' + (type === 'success' ? 'check-circle' : 'times-circle') + '"></i> ' + message;
+            toast.onclick = function() { this.remove(); };
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 4000);
+        }
+    </script>
+</body>
+</html>

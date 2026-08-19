@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% block title %}{{ colegio.nombre }}{% endblock %}
+{% block page_title %}{{ colegio.nombre }}{% endblock %}
+
+{% block content %}
+<div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:24px; flex-wrap:wrap; gap:12px;">
+    <div>
+        <p style="color:var(--text-muted); font-size:0.88rem;">
+            {{ colegio.direccion or '' }}{% if colegio.distrito %} — {{ colegio.distrito }}{% endif %}
+        </p>
+    </div>
+    <a href="{{ url_for('main.dashboard') }}" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> Volver</a>
+</div>
+
+<div class="stats-grid">
+    <div class="stat-card accent">
+        <div class="stat-value">{{ personeros | length }}</div>
+        <div class="stat-label">Total Personeros</div>
+    </div>
+    <div class="stat-card info">
+        <div class="stat-value">{{ mesas | length }}</div>
+        <div class="stat-label">Total Mesas</div>
+    </div>
+    <div class="stat-card success">
+        <div class="stat-value">{{ personeros | selectattr('estado', 'equalto', 'PRESENTE') | list | length }}</div>
+        <div class="stat-label">Presentes</div>
+    </div>
+    <div class="stat-card danger">
+        <div class="stat-value">{{ personeros | selectattr('estado', 'equalto', 'AUSENTE') | list | length }}</div>
+        <div class="stat-label">Ausentes</div>
+    </div>
+</div>
+
+<div class="mesas-grid" style="margin-bottom:24px;">
+    {% for mesa in mesas %}
+    {% set count = personeros | selectattr('mesa_id', 'equalto', mesa.id) | list | length %}
+    <div class="mesa-card {{ 'con-personero' if count > 0 }}">
+        <h4>Mesa {{ mesa.numero }}</h4>
+        <div class="mesa-count">{{ count }}</div>
+        <p style="font-size:0.75rem; color:var(--text-muted);">personero(s)</p>
+    </div>
+    {% endfor %}
+</div>
+
+<div class="panel">
+    <div class="panel-header">
+        <h2><i class="fas fa-list"></i> Todos los Personeros</h2>
+    </div>
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Código</th>
+                    <th>Nombre</th>
+                    <th>DNI</th>
+                    <th>Partido</th>
+                    <th>Mesa</th>
+                    <th>Hora</th>
+                    <th>Estado</th>
+                    <th>Incidente</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in personeros %}
+                <tr>
+                    <td><span style="font-family:monospace; font-weight:700; color:#818cf8;">{{ p.codigo }}</span></td>
+                    <td style="font-weight:600; color:var(--text-primary);">{{ p.nombre_completo }}</td>
+                    <td style="font-family:monospace;">{{ p.dni }}</td>
+                    <td><span class="badge badge-partido">{{ p.partido_politico }}</span></td>
+                    <td><strong>{{ p.numero_mesa }}</strong></td>
+                    <td>{{ p.hora_llegada or '—' }}</td>
+                    <td><span class="badge badge-{{ p.estado.lower() }}">{{ p.estado }}</span></td>
+                    <td>{{ p.incidente or 'NINGUNO' }}</td>
+                </tr>
+                {% else %}
+                <tr><td colspan="8" class="empty-state"><i class="fas fa-inbox"></i><p>Sin personeros registrados</p></td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

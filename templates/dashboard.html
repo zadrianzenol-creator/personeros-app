@@ -1,0 +1,250 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block page_title %}Panel de Control{% endblock %}
+
+{% block content %}
+<div class="stats-grid">
+    <div class="stat-card accent">
+        <div class="stat-icon" style="background: rgba(99,102,241,0.15); color: #818cf8;"><i class="fas fa-users"></i></div>
+        <div class="stat-value" id="statTotalHoy">0</div>
+        <div class="stat-label">Registros Hoy</div>
+    </div>
+    <div class="stat-card success">
+        <div class="stat-icon" style="background: rgba(16,185,129,0.15); color: #6ee7b7;"><i class="fas fa-user-check"></i></div>
+        <div class="stat-value" id="statPresentes">0</div>
+        <div class="stat-label">Presentes</div>
+    </div>
+    <div class="stat-card danger">
+        <div class="stat-icon" style="background: rgba(239,68,68,0.15); color: #fca5a5;"><i class="fas fa-user-times"></i></div>
+        <div class="stat-value" id="statAusentes">0</div>
+        <div class="stat-label">Ausentes</div>
+    </div>
+    <div class="stat-card warning">
+        <div class="stat-icon" style="background: rgba(245,158,11,0.15); color: #fcd34d;"><i class="fas fa-hourglass-half"></i></div>
+        <div class="stat-value" id="statPendientes">0</div>
+        <div class="stat-label">Pendientes</div>
+    </div>
+    <div class="stat-card info">
+        <div class="stat-icon" style="background: rgba(6,182,212,0.15); color: #67e8f9;"><i class="fas fa-school"></i></div>
+        <div class="stat-value" id="statColegios">0</div>
+        <div class="stat-label">Colegios</div>
+    </div>
+    <div class="stat-card accent">
+        <div class="stat-icon" style="background: rgba(99,102,241,0.15); color: #818cf8;"><i class="fas fa-table-cells"></i></div>
+        <div class="stat-value" id="statMesas">0</div>
+        <div class="stat-label">Mesas</div>
+    </div>
+</div>
+
+<div style="display: grid; grid-template-columns: 1fr 380px; gap: 24px;">
+    <div>
+        <div class="panel">
+            <div class="panel-header">
+                <h2><i class="fas fa-list-check"></i> Registro de Personeros</h2>
+                <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                    <button class="btn btn-primary btn-sm" onclick="cargarPersoneros()"><i class="fas fa-sync-alt"></i> Actualizar</button>
+                    <a href="{{ url_for('main.registrar') }}" class="btn btn-secondary btn-sm"><i class="fas fa-plus"></i> Nuevo</a>
+                </div>
+            </div>
+            <div class="panel-body">
+                <div class="filters-bar">
+                    <select class="filter-input" id="filterColegio" onchange="cargarPersoneros()">
+                        <option value="">Todos los colegios</option>
+                        {% for c in colegios %}
+                        <option value="{{ c.id }}">{{ c.nombre }}</option>
+                        {% endfor %}
+                    </select>
+                    <input type="date" class="filter-input" id="filterFecha" onchange="cargarPersoneros()">
+                    <select class="filter-input" id="filterEstado" onchange="cargarPersoneros()">
+                        <option value="">Todos</option>
+                        <option value="PRESENTE">Presente</option>
+                        <option value="AUSENTE">Ausente</option>
+                        <option value="PENDIENTE">Pendiente</option>
+                    </select>
+                    <input type="text" class="filter-input" id="filterSearch" placeholder="Buscar..." onkeyup="debounceSearch()" style="min-width:200px;">
+                </div>
+                <div class="table-wrap">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Código</th>
+                                <th>Nombre</th>
+                                <th>Partido</th>
+                                <th>Colegio</th>
+                                <th>Mesa</th>
+                                <th>Hora</th>
+                                <th>Estado</th>
+                                <th>Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody id="personerosBody">
+                            <tr><td colspan="8" class="empty-state"><i class="fas fa-spinner fa-spin"></i><p>Cargando...</p></td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="pagination" id="pagination"></div>
+            </div>
+        </div>
+    </div>
+
+    <div>
+        <div class="panel">
+            <div class="panel-header">
+                <h2><i class="fas fa-landmark"></i> Por Partido</h2>
+            </div>
+            <div class="panel-body" id="partidosBody">
+                <div class="empty-state"><i class="fas fa-spinner fa-spin"></i><p>Cargando...</p></div>
+            </div>
+        </div>
+
+        <div class="panel">
+            <div class="panel-header">
+                <h2><i class="fas fa-clock-rotate-left"></i> Últimos Registros</h2>
+            </div>
+            <div class="panel-body" id="ultimosBody" style="max-height: 360px; overflow-y: auto;">
+                <div class="empty-state"><i class="fas fa-spinner fa-spin"></i><p>Cargando...</p></div>
+            </div>
+        </div>
+
+        <div class="panel">
+            <div class="panel-header">
+                <h2><i class="fas fa-school"></i> Colegios</h2>
+            </div>
+            <div class="panel-body">
+                <div class="cole-grid" id="coleGrid">
+                    {% for c in colegios %}
+                    <a href="{{ url_for('main.detalle_colegio', colegio_id=c.id) }}" class="cole-card">
+                        <h4>{{ c.nombre }}</h4>
+                        <p>{{ c.distrito or '—' }}</p>
+                        <div class="cole-count" id="coleCount{{ c.id }}">—</div>
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let currentPage = 1;
+let searchTimeout = null;
+
+function debounceSearch() {
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => { currentPage = 1; cargarPersoneros(); }, 400);
+}
+
+function cargarPersoneros(page) {
+    currentPage = page || currentPage;
+    const params = new URLSearchParams({ page: currentPage, per_page: 50 });
+    const v = (id) => document.getElementById(id).value;
+    if (v('filterColegio')) params.set('colegio_id', v('filterColegio'));
+    if (v('filterFecha')) params.set('fecha', v('filterFecha'));
+    if (v('filterEstado')) params.set('estado', v('filterEstado'));
+    if (v('filterSearch')) params.set('search', v('filterSearch'));
+
+    fetch('/api/personeros?' + params.toString())
+        .then(r => r.json())
+        .then(data => {
+            renderPersoneros(data.personeros);
+            renderPagination(data.total, data.pages, data.current_page);
+        });
+}
+
+function renderPersoneros(list) {
+    const tbody = document.getElementById('personerosBody');
+    if (!list.length) {
+        tbody.innerHTML = '<tr><td colspan="8" class="empty-state"><i class="fas fa-inbox"></i><p>Sin registros</p></td></tr>';
+        return;
+    }
+    tbody.innerHTML = list.map(p => `
+        <tr>
+            <td><span style="font-family:monospace; font-weight:700; color:#818cf8;">${p.codigo}</span></td>
+            <td style="font-weight:600; color:var(--text-primary);">${p.nombre_completo}</td>
+            <td><span class="badge badge-partido">${p.partido_politico}</span></td>
+            <td>${p.colegio}</td>
+            <td><strong>${p.numero_mesa}</strong></td>
+            <td>${p.hora_llegada}</td>
+            <td><span class="badge badge-${p.estado.toLowerCase()}">${p.estado}</span></td>
+            <td>
+                <form method="POST" action="/confirmar/${p.id}" style="display:inline;">
+                    <select name="estado" onchange="this.form.submit()" style="padding:5px 8px; border-radius:6px; border:1px solid var(--border-color); background:var(--bg-secondary); color:var(--text-primary); font-size:0.75rem; cursor:pointer;">
+                        <option value="PRESENTE" ${p.estado==='PRESENTE'?'selected':''}>PRESENTE</option>
+                        <option value="AUSENTE" ${p.estado==='AUSENTE'?'selected':''}>AUSENTE</option>
+                        <option value="PENDIENTE" ${p.estado==='PENDIENTE'?'selected':''}>PENDIENTE</option>
+                    </select>
+                </form>
+            </td>
+        </tr>
+    `).join('');
+}
+
+function renderPagination(total, pages, current) {
+    const div = document.getElementById('pagination');
+    if (pages <= 1) { div.innerHTML = ''; return; }
+    let html = `<button class="page-btn" onclick="cargarPersoneros(${current-1})" ${current<=1?'disabled':''}><i class="fas fa-chevron-left"></i></button>`;
+    for (let i = 1; i <= pages; i++) {
+        if (i === 1 || i === pages || Math.abs(i - current) <= 2) {
+            html += `<button class="page-btn ${i===current?'active':''}" onclick="cargarPersoneros(${i})">${i}</button>`;
+        } else if (Math.abs(i - current) === 3) {
+            html += `<span style="color:var(--text-muted); padding:0 4px;">...</span>`;
+        }
+    }
+    html += `<button class="page-btn" onclick="cargarPersoneros(${current+1})" ${current>=pages?'disabled':''}><i class="fas fa-chevron-right"></i></button>`;
+    div.innerHTML = html;
+}
+
+function cargarStats() {
+    fetch('/api/stats')
+        .then(r => r.json())
+        .then(data => {
+            document.getElementById('statTotalHoy').textContent = data.total_hoy;
+            document.getElementById('statPresentes').textContent = data.presentes_hoy;
+            document.getElementById('statAusentes').textContent = data.ausentes_hoy;
+            document.getElementById('statPendientes').textContent = data.pendientes_hoy;
+            document.getElementById('statColegios').textContent = data.colegios_con_personeros;
+            document.getElementById('statMesas').textContent = data.mesas_con_personeros;
+
+            const partidos = document.getElementById('partidosBody');
+            const entries = Object.entries(data.por_partido);
+            if (!entries.length) {
+                partidos.innerHTML = '<div class="empty-state"><i class="fas fa-inbox"></i><p>Sin datos</p></div>';
+            } else {
+                partidos.innerHTML = entries.map(([p, c]) => `
+                    <div class="activity-item">
+                        <div class="activity-avatar" style="background:linear-gradient(135deg,#6366f1,#8b5cf6);"><i class="fas fa-landmark"></i></div>
+                        <div class="activity-info">
+                            <div class="activity-name">${p}</div>
+                            <div class="activity-detail">${c} personero(s)</div>
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            const ultimos = document.getElementById('ultimosBody');
+            if (!data.ultimos.length) {
+                ultimos.innerHTML = '<div class="empty-state"><i class="fas fa-inbox"></i><p>Sin registros</p></div>';
+            } else {
+                ultimos.innerHTML = data.ultimos.map(p => `
+                    <div class="activity-item">
+                        <div class="activity-avatar" style="background:${p.estado==='PRESENTE'?'linear-gradient(135deg,#10b981,#34d399)':p.estado==='AUSENTE'?'linear-gradient(135deg,#ef4444,#f87171)':'linear-gradient(135deg,#f59e0b,#fbbf24)'};">
+                            <i class="fas fa-user"></i>
+                        </div>
+                        <div class="activity-info">
+                            <div class="activity-name">${p.nombre_completo}</div>
+                            <div class="activity-detail">${p.colegio} — Mesa ${p.numero_mesa}</div>
+                        </div>
+                        <div class="activity-time">${p.hora_llegada}</div>
+                    </div>
+                `).join('');
+            }
+        });
+}
+
+cargarPersoneros();
+cargarStats();
+setInterval(() => { cargarPersoneros(); cargarStats(); }, 30000);
+</script>
+{% endblock %}
