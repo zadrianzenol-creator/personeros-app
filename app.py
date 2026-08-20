@@ -1,4 +1,4 @@
-from flask import Flask, render_template
+from flask import Flask, render_template, jsonify
 from flask_login import LoginManager
 from config import Config
 from database import db, init_db
@@ -25,6 +25,10 @@ def create_app():
     app.register_blueprint(auth_bp)
     app.register_blueprint(main_bp)
 
+    @app.route("/ping")
+    def ping():
+        return jsonify({"status": "ok"}), 200
+
     @app.errorhandler(404)
     def not_found(e):
         return render_template("errors/404.html"), 404
@@ -32,6 +36,10 @@ def create_app():
     @app.errorhandler(403)
     def forbidden(e):
         return render_template("errors/403.html"), 403
+
+    @app.errorhandler(500)
+    def server_error(e):
+        return render_template("errors/500.html"), 500
 
     return app
 
