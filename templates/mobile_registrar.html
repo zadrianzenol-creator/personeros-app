@@ -52,6 +52,25 @@
         {% endif %}
         {% endwith %}
 
+        <div class="mobile-card" style="margin-bottom: 16px;">
+            <div class="card-header">
+                <div class="card-icon" style="background: rgba(250,204,21,0.15); color: #facc15;">
+                    <i class="fas fa-magnifying-glass"></i>
+                </div>
+                <div>
+                    <div class="card-title">Buscar por DNI</div>
+                    <div class="card-subtitle">Auto-completar datos del personero</div>
+                </div>
+            </div>
+            <div class="mobile-field" style="display:flex; gap:10px;">
+                <input type="text" id="dniSearchInput" placeholder="Ingrese DNI..." maxlength="12" inputmode="numeric" style="flex:1;">
+                <button type="button" class="mobile-btn mobile-btn-primary" onclick="buscarDNI()" id="btnBuscarDNI" style="white-space:nowrap; padding:0 20px;">
+                    <i class="fas fa-search"></i> Buscar
+                </button>
+            </div>
+            <div id="dniResult" style="display:none; margin-top:10px;"></div>
+        </div>
+
         <form method="POST" action="{{ url_for('main.registrar') }}" id="registroForm">
             <div class="mobile-card">
                 <div class="card-header">
@@ -68,7 +87,7 @@
                     <label>Código <span class="req">*</span></label>
                     <div class="input-icon">
                         <i class="fas fa-barcode"></i>
-                        <input type="text" name="codigo" id="codigo" placeholder="PER-012345" required style="text-transform:uppercase; font-family:monospace; font-weight:700; font-size:1.1rem;">
+                        <input type="text" name="codigo" id="mCodigo" placeholder="PER-012345" required style="text-transform:uppercase; font-family:monospace; font-weight:700; font-size:1.1rem;">
                     </div>
                 </div>
 
@@ -76,7 +95,7 @@
                     <label>Nombre Completo <span class="req">*</span></label>
                     <div class="input-icon">
                         <i class="fas fa-user"></i>
-                        <input type="text" name="nombre_completo" placeholder="Ej: Juan Pérez López" required>
+                        <input type="text" name="nombre_completo" id="mNombre" placeholder="Ej: Juan Pérez López" required>
                     </div>
                 </div>
 
@@ -84,7 +103,7 @@
                     <label>DNI <span class="req">*</span></label>
                     <div class="input-icon">
                         <i class="fas fa-fingerprint"></i>
-                        <input type="text" name="dni" placeholder="Ej: 12345678" maxlength="12" required inputmode="numeric">
+                        <input type="text" name="dni" id="mDni" placeholder="Ej: 12345678" maxlength="12" required inputmode="numeric">
                     </div>
                 </div>
 
@@ -92,7 +111,7 @@
                     <label>Teléfono</label>
                     <div class="input-icon">
                         <i class="fas fa-phone"></i>
-                        <input type="tel" name="telefono" placeholder="Ej: 912345678" inputmode="tel">
+                        <input type="tel" name="telefono" id="mTelefono" placeholder="Ej: 912345678" inputmode="tel">
                     </div>
                 </div>
 
@@ -100,13 +119,13 @@
                     <label>Partido Político <span class="req">*</span></label>
                     <div class="input-icon">
                         <i class="fas fa-landmark"></i>
-                        <input type="text" name="partido_politico" placeholder="Ej: Partido Político XYZ" required>
+                        <input type="text" name="partido_politico" id="mPartido" placeholder="Ej: Partido Político XYZ" required>
                     </div>
                 </div>
 
                 <div class="mobile-field">
                     <label>Rol</label>
-                    <select name="rol">
+                    <select name="rol" id="mRol">
                         <option value="Personero">Personero</option>
                         <option value="Suplente">Suplente</option>
                         <option value="Apoderado">Apoderado</option>
@@ -211,6 +230,75 @@
     </nav>
 
     <script>
+        document.getElementById('dniSearchInput').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') { e.preventDefault(); buscarDNI(); }
+        });
+
+        function buscarDNI() {
+            const dni = document.getElementById('dniSearchInput').value.trim();
+            if (!dni) return;
+            const result = document.getElementById('dniResult');
+            const btn = document.getElementById('btnBuscarDNI');
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            btn.disabled = true;
+
+            fetch('/api/personero-dni/' + dni)
+                .then(r => r.json())
+                .then(data => {
+                    btn.innerHTML = '<i class="fas fa-search"></i> Buscar';
+                    btn.disabled = false;
+                    if (data.found) {
+                        document.getElementById('mCodigo').value = data.codigo;
+                        document.getElementById('mDni').value = data.dni;
+                        document.getElementById('mNombre').value = data.nombre_completo;
+                        document.getElementById('mTelefono').value = data.telefono || '';
+                        document.getElementById('mPartido').value = data.partido_politico;
+                        document.getElementById('mRol').value = data.rol;
+
+                        const colegioSelect = document.getElementById('colegioSelect');
+                        for (let i = 0; i < colegioSelect.options.length; i++) {
+                            if (colegioSelect.options[i].value == data.colegio_id) {
+                                colegioSelect.selectedIndex = i;
+                                break;
+                            }
+                        }
+                        loadMesasMovil(data.colegio_id, data.mesa_id);
+
+                        result.innerHTML = '<div style="padding:10px; background:rgba(16,185,129,0.1); border:1px solid rgba(16,185,129,0.2); border-radius:10px; color:#6ee7b7; font-size:0.85rem;"><i class="fas fa-check-circle"></i> Datos auto-completados.</div>';
+                    } else {
+                        result.innerHTML = '<div style="padding:10px; background:rgba(245,158,11,0.1); border:1px solid rgba(245,158,11,0.2); border-radius:10px; color:#fcd34d; font-size:0.85rem;"><i class="fas fa-exclamation-triangle"></i> DNI no encontrado.</div>';
+                    }
+                    result.style.display = 'block';
+                })
+                .catch(err => {
+                    btn.innerHTML = '<i class="fas fa-search"></i> Buscar';
+                    btn.disabled = false;
+                    result.innerHTML = '<div style="padding:10px; background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.2); border-radius:10px; color:#fca5a5; font-size:0.85rem;"><i class="fas fa-times-circle"></i> Error de conexión.</div>';
+                    result.style.display = 'block';
+                });
+        }
+
+        function loadMesasMovil(colegioId, selectedMesaId) {
+            const mesaSelect = document.getElementById('mesaSelect');
+            mesaSelect.innerHTML = '<option value="">Cargando...</option>';
+            if (!colegioId) {
+                mesaSelect.innerHTML = '<option value="">Seleccione colegio primero...</option>';
+                return;
+            }
+            fetch('/api/mesas/' + colegioId)
+                .then(r => r.json())
+                .then(mesas => {
+                    mesaSelect.innerHTML = '<option value="">Seleccione mesa...</option>';
+                    mesas.forEach(m => {
+                        const opt = document.createElement('option');
+                        opt.value = m.id;
+                        opt.textContent = 'Mesa ' + m.numero;
+                        if (selectedMesaId && m.id == selectedMesaId) opt.selected = true;
+                        mesaSelect.appendChild(opt);
+                    });
+                });
+        }
+
         // SERVICE WORKER
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('/static/js/sw.js')

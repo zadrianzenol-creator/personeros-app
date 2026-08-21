@@ -9,36 +9,49 @@
         Registrar Nuevo Personero
     </h2>
 
+    <div class="dni-search-box" id="dniSearchBox">
+        <div class="form-section-title"><i class="fas fa-magnifying-glass"></i> Buscar por DNI</div>
+        <div class="form-row">
+            <div class="form-group" style="flex:1;">
+                <input type="text" id="dniSearchInput" placeholder="Ingrese DNI para auto-completar..." maxlength="12" style="text-transform:uppercase;">
+            </div>
+            <button type="button" class="btn btn-primary" onclick="buscarDNI()" id="btnBuscarDNI">
+                <i class="fas fa-search"></i> Buscar
+            </button>
+        </div>
+        <div id="dniResult" style="display:none; margin-top:10px;"></div>
+    </div>
+
     <form method="POST" action="{{ url_for('main.registrar') }}">
         <div class="form-section">
             <div class="form-section-title"><i class="fas fa-id-card"></i> Datos de Identificación</div>
             <div class="form-row">
                 <div class="form-group">
                     <label>Código <span class="req">*</span></label>
-                    <input type="text" name="codigo" placeholder="Ej: PER-012345" value="{{ form_data.get('codigo', '') }}" required style="text-transform:uppercase;">
+                    <input type="text" name="codigo" id="fCodigo" placeholder="Ej: PER-012345" value="{{ form_data.get('codigo', '') }}" required style="text-transform:uppercase;">
                 </div>
                 <div class="form-group">
                     <label>DNI <span class="req">*</span></label>
-                    <input type="text" name="dni" placeholder="Ej: 12345678" maxlength="12" value="{{ form_data.get('dni', '') }}" required>
+                    <input type="text" name="dni" id="fDni" placeholder="Ej: 12345678" maxlength="12" value="{{ form_data.get('dni', '') }}" required>
                 </div>
             </div>
             <div class="form-group">
                 <label>Nombre Completo <span class="req">*</span></label>
-                <input type="text" name="nombre_completo" placeholder="Ej: Juan Pérez López" value="{{ form_data.get('nombre_completo', '') }}" required>
+                <input type="text" name="nombre_completo" id="fNombre" placeholder="Ej: Juan Pérez López" value="{{ form_data.get('nombre_completo', '') }}" required>
             </div>
             <div class="form-row">
                 <div class="form-group">
                     <label>Teléfono</label>
-                    <input type="text" name="telefono" placeholder="Ej: 912345678" maxlength="20" value="{{ form_data.get('telefono', '') }}">
+                    <input type="text" name="telefono" id="fTelefono" placeholder="Ej: 912345678" maxlength="20" value="{{ form_data.get('telefono', '') }}">
                 </div>
                 <div class="form-group">
                     <label>Partido Político <span class="req">*</span></label>
-                    <input type="text" name="partido_politico" placeholder="Ej: Partido XYZ" value="{{ form_data.get('partido_politico', '') }}" required>
+                    <input type="text" name="partido_politico" id="fPartido" placeholder="Ej: Partido XYZ" value="{{ form_data.get('partido_politico', '') }}" required>
                 </div>
             </div>
             <div class="form-group">
                 <label>Rol</label>
-                <select name="rol">
+                <select name="rol" id="fRol">
                     <option value="Personero" {{ 'selected' if form_data.get('rol') == 'Personero' }}>Personero</option>
                     <option value="Suplente" {{ 'selected' if form_data.get('rol') == 'Suplente' }}>Suplente</option>
                     <option value="Apoderado" {{ 'selected' if form_data.get('rol') == 'Apoderado' }}>Apoderado</option>
@@ -88,8 +101,56 @@
 
 {% block scripts %}
 <script>
-document.getElementById('colegioSelect').addEventListener('change', function() {
-    const colegioId = this.value;
+document.getElementById('dniSearchInput').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') { e.preventDefault(); buscarDNI(); }
+});
+
+function buscarDNI() {
+    const dni = document.getElementById('dniSearchInput').value.trim();
+    if (!dni) return;
+    const result = document.getElementById('dniResult');
+    const btn = document.getElementById('btnBuscarDNI');
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Buscando...';
+    btn.disabled = true;
+
+    fetch('/api/personero-dni/' + dni)
+        .then(r => r.json())
+        .then(data => {
+            btn.innerHTML = '<i class="fas fa-search"></i> Buscar';
+            btn.disabled = false;
+            if (data.found) {
+                document.getElementById('fCodigo').value = data.codigo;
+                document.getElementById('fDni').value = data.dni;
+                document.getElementById('fNombre').value = data.nombre_completo;
+                document.getElementById('fTelefono').value = data.telefono || '';
+                document.getElementById('fPartido').value = data.partido_politico;
+                document.getElementById('fRol').value = data.rol;
+
+                const colegioSelect = document.getElementById('colegioSelect');
+                if (colegioSelect) {
+                    for (let i = 0; i < colegioSelect.options.length; i++) {
+                        if (colegioSelect.options[i].value == data.colegio_id) {
+                            colegioSelect.selectedIndex = i;
+                            break;
+                        }
+                    }
+                    loadMesas(data.colegio_id, data.mesa_id);
+                }
+                result.innerHTML = '<div style="padding:10px; background:var(--success-bg); border:1px solid rgba(16,185,129,0.2); border-radius:10px; color:#6ee7b7; font-size:0.85rem;"><i class="fas fa-check-circle"></i> Personero encontrado. Datos auto-completados.</div>';
+            } else {
+                result.innerHTML = '<div style="padding:10px; background:var(--warning-bg); border:1px solid rgba(245,158,11,0.2); border-radius:10px; color:#fcd34d; font-size:0.85rem;"><i class="fas fa-exclamation-triangle"></i> DNI no encontrado. Complete el formulario manualmente.</div>';
+            }
+            result.style.display = 'block';
+        })
+        .catch(err => {
+            btn.innerHTML = '<i class="fas fa-search"></i> Buscar';
+            btn.disabled = false;
+            result.innerHTML = '<div style="padding:10px; background:var(--danger-bg); border:1px solid rgba(239,68,68,0.2); border-radius:10px; color:#fca5a5; font-size:0.85rem;"><i class="fas fa-times-circle"></i> Error de conexión.</div>';
+            result.style.display = 'block';
+        });
+}
+
+function loadMesas(colegioId, selectedMesaId) {
     const mesaSelect = document.getElementById('mesaSelect');
     mesaSelect.innerHTML = '<option value="">Cargando...</option>';
     if (!colegioId) {
@@ -104,9 +165,14 @@ document.getElementById('colegioSelect').addEventListener('change', function() {
                 const opt = document.createElement('option');
                 opt.value = m.id;
                 opt.textContent = 'Mesa ' + m.numero;
+                if (selectedMesaId && m.id == selectedMesaId) opt.selected = true;
                 mesaSelect.appendChild(opt);
             });
         });
+}
+
+document.getElementById('colegioSelect').addEventListener('change', function() {
+    loadMesas(this.value, null);
 });
 
 document.getElementById('mesaSelect').addEventListener('change', function() {

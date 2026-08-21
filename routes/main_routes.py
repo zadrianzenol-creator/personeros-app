@@ -2,6 +2,7 @@ from flask import Blueprint, render_template, request, jsonify, redirect, url_fo
 from flask_login import login_required, current_user
 from database import db, peru_now
 from models.personero import Colegio, Mesa, Personero
+from models.voto import Voto, VotoEspecial, PARTIDOS, CARGOS
 from datetime import datetime
 import user_agents
 
@@ -75,7 +76,7 @@ def registrar():
             colegio_id=colegio_id,
             mesa_id=mesa_id,
             numero_mesa=int(numero_mesa),
-            estado="PENDIENTE",
+            estado="PRESENTE",
             incidente="NINGUNO",
             fecha_registro=now,
             hora_llegada=now.strftime("%H:%M:%S"),
@@ -84,11 +85,108 @@ def registrar():
         db.session.add(personero)
         db.session.commit()
 
-        flash(f"Personero {nombre} registrado exitosamente.", "success")
-        return redirect(url_for("main.registrar"))
+        return redirect(url_for("main.contar_votos", personero_id=personero.id))
 
     template = "mobile_registrar.html" if use_mobile else "registrar.html"
     return render_template(template, colegios=colegios, form_data={})
+
+
+@main_bp.route("/api/personero-dni/<dni>")
+def api_personero_dni(dni):
+    personero = Personero.query.filter_by(dni=dni).first()
+    if not personero:
+        return jsonify({"found": False})
+    return jsonify({
+        "found": True,
+        "id": personero.id,
+        "codigo": personero.codigo,
+        "nombre_completo": personero.nombre_completo,
+        "dni": personero.dni,
+        "telefono": personero.telefono or "",
+        "partido_politico": personero.partido_politico,
+        "rol": personero.rol,
+        "colegio_id": personero.colegio_id,
+        "colegio_nombre": personero.colegio.nombre if personero.colegio else "",
+        "mesa_id": personero.mesa_id,
+        "numero_mesa": personero.numero_mesa,
+    })
+
+
+@main_bp.route("/c/<int:personero_id>")
+def contar_votos(personero_id):
+    personero = Personero.query.get_or_404(personero_id)
+    if personero.estado != "PRESENTE":
+        personero.estado = "PRESENTE"
+        db.session.commit()
+    return render_template(
+        "contar_votos.html",
+        personero=personero,
+        partidos=PARTIDOS,
+        cargos=CARGOS,
+    )
+
+
+@main_bp.route("/api/guardar-votos/<int:personero_id>", methods=["POST"])
+def api_guardar_votos(personero_id):
+    personero = Personero.query.get_or_404(personero_id)
+    data = request.get_json()
+
+    if not data or "cargo" not in data or "votos" not in data:
+        return jsonify({"error": "Datos incompletos"}), 400
+
+    cargo_id = data["cargo"]
+    votos_data = data["votos"]
+    especiales = data.get("especiales", {})
+
+    for item in votos_data:
+        partido_id = item["partido_id"]
+        partido_info = next((p for p in PARTIDOS if p["id"] == partido_id), None)
+        if not partido_info:
+            continue
+
+        existing = Voto.query.filter_by(
+            mesa_id=personero.mesa_id,
+            partido_id=partido_id,
+            cargo=cargo_id,
+        ).first()
+
+        if existing:
+            existing.votos = item["votos"]
+        else:
+            db.session.add(Voto(
+                mesa_id=personero.mesa_id,
+                colegio_id=personero.colegio_id,
+                partido_id=partido_id,
+                partido_nombre=partido_info["nombre"],
+                partido_sigla=partido_info["sigla"],
+                cargo=cargo_id,
+                votos=item["votos"],
+                registrado_por=None,
+                personero_id=personero.id,
+            ))
+
+    for tipo in ["BLANCO", "NULO", "IMPUGNADO"]:
+        cantidad = especiales.get(tipo, 0)
+        existing = VotoEspecial.query.filter_by(
+            mesa_id=personero.mesa_id,
+            cargo=cargo_id,
+            tipo=tipo,
+        ).first()
+        if existing:
+            existing.cantidad = cantidad
+        else:
+            db.session.add(VotoEspecial(
+                mesa_id=personero.mesa_id,
+                colegio_id=personero.colegio_id,
+                cargo=cargo_id,
+                tipo=tipo,
+                cantidad=cantidad,
+                registrado_por=None,
+                personero_id=personero.id,
+            ))
+
+    db.session.commit()
+    return jsonify({"ok": True, "message": f"Votos de {cargo_id} guardados correctamente"})
 
 
 @main_bp.route("/confirmar/<int:personero_id>", methods=["POST"])
@@ -189,6 +287,28 @@ def api_stats():
         "por_partido": {p: c for p, c in por_partido},
         "por_colegio": {},
         "ultimos": [p.to_dict() for p in ultimos],
+    })
+
+
+@main_bp.route("/api/votos-por-cargo/<int:personero_id>")
+def api_votos_por_cargo(personero_id):
+    personero = Personero.query.get_or_404(personero_id)
+
+    votos_existentes = {}
+    for v in Voto.query.filter_by(mesa_id=personero.mesa_id).all():
+        if v.cargo not in votos_existentes:
+            votos_existentes[v.cargo] = {}
+        votos_existentes[v.cargo][v.partido_id] = v.votos
+
+    especiales_existentes = {}
+    for ve in VotoEspecial.query.filter_by(mesa_id=personero.mesa_id).all():
+        if ve.cargo not in especiales_existentes:
+            especiales_existentes[ve.cargo] = {}
+        especiales_existentes[ve.cargo][ve.tipo] = ve.cantidad
+
+    return jsonify({
+        "votos": votos_existentes,
+        "especiales": especiales_existentes,
     })
 
 

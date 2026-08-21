@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#0a0a0f">
+    <title>Conteo de Votos</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{font-family:'Inter',sans-serif;background:#0a0a0f;color:#fff;min-height:100vh;overflow-x:hidden}
+        .header{position:sticky;top:0;z-index:100;background:rgba(10,10,15,0.95);backdrop-filter:blur(20px);border-bottom:1px solid rgba(255,255,255,0.06);padding:14px 20px;display:flex;align-items:center;gap:14px}
+        .header-avatar{width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,#6366f1,#8b5cf6);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:0.9rem;color:#fff;flex-shrink:0}
+        .header-info{flex:1;min-width:0}
+        .header-name{font-size:0.95rem;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+        .header-detail{font-size:0.75rem;color:rgba(255,255,255,0.4)}
+        .progress-bar{display:flex;gap:4px;padding:10px 20px;background:rgba(255,255,255,0.02);border-bottom:1px solid rgba(255,255,255,0.04)}
+        .progress-step{flex:1;height:5px;border-radius:3px;background:rgba(255,255,255,0.06);transition:background 0.3s}
+        .progress-step.done{background:#10b981}
+        .progress-step.active{background:#6366f1;animation:pulseP 1.5s infinite}
+        @keyframes pulseP{0%,100%{opacity:1}50%{opacity:0.5}}
+        .section{display:none;padding:20px}
+        .section.active{display:block;animation:fadeIn 0.4s ease}
+        @keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+        .section-banner{border-radius:16px;padding:20px;margin-bottom:20px;text-align:center}
+        .section-banner h2{font-size:1.1rem;font-weight:800}
+        .section-banner p{font-size:0.8rem;opacity:0.7;margin-top:4px}
+        .party-list{display:flex;flex-direction:column;gap:8px}
+        .party-row{display:flex;align-items:center;gap:12px;padding:12px 14px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:12px;transition:all 0.2s}
+        .party-row:focus-within{border-color:rgba(99,102,241,0.4);background:rgba(99,102,241,0.05)}
+        .party-logo{width:38px;height:38px;border-radius:10px;object-fit:contain;background:rgba(255,255,255,0.05);flex-shrink:0}
+        .party-info{flex:1;min-width:0}
+        .party-name{font-size:0.78rem;font-weight:600;color:rgba(255,255,255,0.85);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+        .party-sigla{font-size:0.68rem;color:rgba(255,255,255,0.35)}
+        .party-input{width:72px;padding:10px 8px;background:rgba(255,255,255,0.06);border:2px solid rgba(255,255,255,0.08);border-radius:10px;font-size:1rem;font-weight:700;font-family:inherit;color:#fff;text-align:center;outline:none;transition:all 0.2s}
+        .party-input:focus{border-color:rgba(99,102,241,0.5);background:rgba(99,102,241,0.1)}
+        .party-input::-webkit-outer-spin-button,.party-input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+        .party-input[type=number]{-moz-appearance:textfield}
+        .especiales-section{margin-top:20px;padding-top:16px;border-top:1px solid rgba(255,255,255,0.06)}
+        .especiales-title{font-size:0.72rem;font-weight:700;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px}
+        .especiales-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+        .especial-card{padding:14px;text-align:center;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:12px}
+        .especial-card .eicon{font-size:1.3rem;margin-bottom:6px}
+        .especial-card .elabel{font-size:0.72rem;color:rgba(255,255,255,0.5)}
+        .especial-card input{width:60px;padding:8px 6px;margin-top:6px;background:rgba(255,255,255,0.06);border:2px solid rgba(255,255,255,0.08);border-radius:10px;font-size:1rem;font-weight:700;font-family:inherit;color:#fff;text-align:center;outline:none}
+        .especial-card input:focus{border-color:rgba(99,102,241,0.5)}
+        .especial-card input::-webkit-outer-spin-button,.especial-card input::-webkit-inner-spin-button{-webkit-appearance:none}
+        .nav-buttons{display:flex;gap:12px;padding:20px;border-top:1px solid rgba(255,255,255,0.06);background:rgba(10,10,15,0.95);position:sticky;bottom:0}
+        .nav-btn{flex:1;padding:14px;border:none;border-radius:12px;font-size:0.9rem;font-weight:700;font-family:inherit;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:all 0.2s}
+        .nav-btn-back{background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.6);border:1px solid rgba(255,255,255,0.1)}
+        .nav-btn-next{color:#fff;background:linear-gradient(135deg,#6366f1,#8b5cf6)}
+        .nav-btn-submit{background:linear-gradient(135deg,#10b981,#34d399);color:#fff}
+        .nav-btn:hover{transform:translateY(-1px)}
+        .total-badge{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:20px;font-size:0.78rem;font-weight:700;margin-top:10px}
+        .success-overlay{display:none;position:fixed;inset:0;z-index:200;background:rgba(10,10,15,0.95);backdrop-filter:blur(20px);flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:40px}
+        .success-overlay.show{display:flex}
+        .success-icon-big{width:80px;height:80px;border-radius:24px;background:linear-gradient(135deg,#10b981,#34d399);display:flex;align-items:center;justify-content:center;font-size:2rem;color:#fff;margin-bottom:24px;box-shadow:0 16px 48px rgba(16,185,129,0.3)}
+        .success-overlay h2{font-size:1.4rem;font-weight:800;margin-bottom:8px}
+        .success-overlay p{font-size:0.9rem;color:rgba(255,255,255,0.5);margin-bottom:30px}
+        .resumen-card{width:100%;max-width:400px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:20px;margin-bottom:20px;text-align:left}
+        .resumen-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.04)}
+        .resumen-row:last-child{border-bottom:none}
+        .resumen-label{font-size:0.82rem;color:rgba(255,255,255,0.5)}
+        .resumen-valor{font-size:0.95rem;font-weight:700}
+        .toast-msg{position:fixed;top:20px;left:50%;transform:translateX(-50%);padding:12px 24px;border-radius:12px;font-size:0.85rem;font-weight:600;z-index:300;animation:slideDown 0.3s ease}
+        .toast-msg.success{background:rgba(16,185,129,0.15);border:1px solid rgba(16,185,129,0.3);color:#6ee7b7}
+        .toast-msg.error{background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.3);color:#fca5a5}
+        @keyframes slideDown{from{opacity:0;transform:translateX(-50%) translateY(-20px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+        @media(max-width:600px){.party-row{padding:10px;gap:10px}.party-logo{width:32px;height:32px}.party-name{font-size:0.72rem}.party-input{width:60px;padding:8px 6px;font-size:0.9rem}.especiales-grid{grid-template-columns:1fr}.section-banner{padding:16px}.section-banner h2{font-size:0.95rem}}
+    </style>
+</head>
+<body>
+<div class="header">
+    <div class="header-avatar">{{ personero.nombre_completo[:1].upper() }}</div>
+    <div class="header-info">
+        <div class="header-name">{{ personero.nombre_completo }}</div>
+        <div class="header-detail">DNI: {{ personero.dni }} &mdash; Mesa {{ personero.numero_mesa }}</div>
+    </div>
+    <div class="header-detail" style="text-align:right">
+        <div style="font-weight:600">{{ personero.colegio.nombre }}</div>
+    </div>
+</div>
+<div class="progress-bar" id="progressBar">
+    {% for c in cargos %}
+    <div class="progress-step {% if loop.first %}active{% endif %}" data-step="{{ loop.index0 }}"></div>
+    {% endfor %}
+</div>
+{% for cargo in cargos %}
+<div class="section {% if loop.first %}active{% endif %}" id="section-{{ cargo.id }}" data-cargo="{{ cargo.id }}">
+    <div class="section-banner" style="background:{{ cargo.color_bg }};border:1px solid {{ cargo.color_border }}">
+        <h2 style="color:{{ cargo.color }}">{{ cargo.nombre }}</h2>
+        <p style="color:{{ cargo.color }}">Ingrese los votos de cada partido</p>
+        <div class="total-badge" style="background:{{ cargo.color_bg }};border:1px solid {{ cargo.color_border }};color:{{ cargo.color }}">
+            <i class="fas fa-calculator"></i> Total: <span class="cargo-total" id="total-{{ cargo.id }}">0</span>
+        </div>
+    </div>
+    <div class="party-list">
+        {% for p in partidos %}
+        <div class="party-row">
+            <img src="/static/img/partidos/{{ p.imagen }}" class="party-logo" alt="{{ p.nombre }}" onerror="this.style.display='none'">
+            <div class="party-info">
+                <div class="party-name">{{ p.nombre }}</div>
+                <div class="party-sigla">{{ p.sigla }}</div>
+            </div>
+            <input type="number" class="party-input" data-cargo="{{ cargo.id }}" data-party="{{ p.id }}" min="0" max="99999" value="0" inputmode="numeric">
+        </div>
+        {% endfor %}
+    </div>
+    <div class="especiales-section">
+        <div class="especiales-title">Votos Especiales</div>
+        <div class="especiales-grid">
+            <div class="especial-card">
+                <div class="eicon"><i class="fas fa-file-circle-xmark" style="color:rgba(255,255,255,0.4)"></i></div>
+                <div class="elabel">Blanco</div>
+                <input type="number" data-cargo="{{ cargo.id }}" data-especial="BLANCO" min="0" max="99999" value="0" inputmode="numeric">
+            </div>
+            <div class="especial-card">
+                <div class="eicon"><i class="fas fa-ban" style="color:#f87171"></i></div>
+                <div class="elabel">Nulo</div>
+                <input type="number" data-cargo="{{ cargo.id }}" data-especial="NULO" min="0" max="99999" value="0" inputmode="numeric">
+            </div>
+            <div class="especial-card">
+                <div class="eicon"><i class="fas fa-shield-halved" style="color:#fbbf24"></i></div>
+                <div class="elabel">Impugnado</div>
+                <input type="number" data-cargo="{{ cargo.id }}" data-especial="IMPUGNADO" min="0" max="99999" value="0" inputmode="numeric">
+            </div>
+        </div>
+    </div>
+</div>
+{% endfor %}
+<div class="nav-buttons" id="navButtons">
+    <button class="nav-btn nav-btn-back" id="btnBack" onclick="prevSection()" style="display:none">
+        <i class="fas fa-arrow-left"></i> Anterior
+    </button>
+    <button class="nav-btn nav-btn-next" id="btnNext" onclick="nextSection()">
+        Siguiente <i class="fas fa-arrow-right"></i>
+    </button>
+</div>
+<div class="success-overlay" id="successOverlay">
+    <div class="success-icon-big"><i class="fas fa-check"></i></div>
+    <h2>Votos Enviados</h2>
+    <p>Los conteos de todos los cargos han sido registrados exitosamente.</p>
+    <div class="resumen-card" id="resumenCard"></div>
+    <a href="/" class="nav-btn nav-btn-next" style="max-width:300px;text-decoration:none;padding:14px 24px">
+        <i class="fas fa-home"></i> Volver al Inicio
+    </a>
+</div>
+<script>
+var PERSONERO_ID = {{ personero.id }};
+var CARGOS = [{% for c in cargos %}{id:"{{ c.id }}",nombre:"{{ c.nombre }}",color:"{{ c.color }}"}{% if not loop.last %},{% endif %}{% endfor %}];
+var currentSection = 0;
+var totalSections = CARGOS.length;
+var completedSections = {};
+var savedData = {};
+
+function updateTotal(cargoId) {
+    var total = 0;
+    document.querySelectorAll('.party-input[data-cargo="'+cargoId+'"]').forEach(function(input) {
+        total += parseInt(input.value) || 0;
+    });
+    document.querySelectorAll('.especial-card input[data-cargo="'+cargoId+'"]').forEach(function(input) {
+        total += parseInt(input.value) || 0;
+    });
+    var el = document.getElementById('total-' + cargoId);
+    if (el) el.textContent = total;
+}
+
+function collectSectionData(cargoId) {
+    var votos = [];
+    document.querySelectorAll('.party-input[data-cargo="'+cargoId+'"]').forEach(function(input) {
+        votos.push({partido_id: parseInt(input.dataset.party), votos: parseInt(input.value) || 0});
+    });
+    var especiales = {};
+    document.querySelectorAll('.especial-card input[data-cargo="'+cargoId+'"]').forEach(function(input) {
+        especiales[input.dataset.especial] = parseInt(input.value) || 0;
+    });
+    return {cargo: cargoId, votos: votos, especiales: especiales};
+}
+
+function saveSection(cargoId, callback) {
+    var data = collectSectionData(cargoId);
+    savedData[cargoId] = data;
+    fetch('/api/guardar-votos/' + PERSONERO_ID, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(data)
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(result) {
+        if (result.ok) { showToast('Votos guardados', 'success'); }
+        else { showToast('Error al guardar', 'error'); }
+        if (callback) callback();
+    })
+    .catch(function() {
+        showToast('Error de conexion', 'error');
+        if (callback) callback();
+    });
+}
+
+function updateProgress() {
+    var steps = document.querySelectorAll('.progress-step');
+    steps.forEach(function(step, i) {
+        step.classList.remove('active', 'done');
+        if (i < currentSection) step.classList.add('done');
+        else if (i === currentSection) step.classList.add('active');
+    });
+}
+
+function showSection(index) {
+    document.querySelectorAll('.section').forEach(function(s) { s.classList.remove('active'); });
+    var section = document.getElementById('section-' + CARGOS[index].id);
+    if (section) section.classList.add('active');
+
+    var btnBack = document.getElementById('btnBack');
+    var btnNext = document.getElementById('btnNext');
+    btnBack.style.display = index > 0 ? '' : 'none';
+
+    if (index === totalSections - 1) {
+        btnNext.innerHTML = '<i class="fas fa-paper-plane"></i> Enviar Votos';
+        btnNext.className = 'nav-btn nav-btn-submit';
+    } else {
+        btnNext.innerHTML = 'Siguiente <i class="fas fa-arrow-right"></i>';
+        btnNext.className = 'nav-btn nav-btn-next';
+    }
+    updateProgress();
+    window.scrollTo(0, 0);
+}
+
+function nextSection() {
+    var cargoId = CARGOS[currentSection].id;
+    saveSection(cargoId, function() {
+        completedSections[currentSection] = true;
+        if (currentSection < totalSections - 1) {
+            currentSection++;
+            showSection(currentSection);
+        } else {
+            showSuccess();
+        }
+    });
+}
+
+function prevSection() {
+    if (currentSection > 0) {
+        currentSection--;
+        showSection(currentSection);
+    }
+}
+
+function showSuccess() {
+    var card = document.getElementById('resumenCard');
+    var html = '';
+    CARGOS.forEach(function(c) {
+        var data = savedData[c.id];
+        var total = 0;
+        if (data) {
+            data.votos.forEach(function(v) { total += v.votos; });
+            Object.values(data.especiales).forEach(function(v) { total += v; });
+        }
+        html += '<div class="resumen-row"><span class="resumen-label" style="color:'+c.color+'">'+c.nombre+'</span><span class="resumen-valor" style="color:'+c.color+'">'+total+'</span></div>';
+    });
+    card.innerHTML = html;
+    document.getElementById('successOverlay').classList.add('show');
+    document.getElementById('navButtons').style.display = 'none';
+}
+
+function showToast(msg, type) {
+    var existing = document.querySelector('.toast-msg');
+    if (existing) existing.remove();
+    var toast = document.createElement('div');
+    toast.className = 'toast-msg ' + type;
+    toast.innerHTML = '<i class="fas fa-' + (type === 'success' ? 'check-circle' : 'times-circle') + '"></i> ' + msg;
+    document.body.appendChild(toast);
+    setTimeout(function() { toast.remove(); }, 3000);
+}
+
+function loadExistingVotes() {
+    fetch('/api/votos-por-cargo/' + PERSONERO_ID)
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        CARGOS.forEach(function(c) {
+            var cid = c.id;
+            if (data.votos[cid]) {
+                Object.entries(data.votos[cid]).forEach(function(entry) {
+                    var partidoId = entry[0];
+                    var votos = entry[1];
+                    var input = document.querySelector('.party-input[data-cargo="'+cid+'"][data-party="'+partidoId+'"]');
+                    if (input) input.value = votos;
+                });
+            }
+            if (data.especiales[cid]) {
+                Object.entries(data.especiales[cid]).forEach(function(entry) {
+                    var tipo = entry[0];
+                    var cant = entry[1];
+                    var input = document.querySelector('.especial-card input[data-cargo="'+cid+'"][data-especial="'+tipo+'"]');
+                    if (input) input.value = cant;
+                });
+            }
+            updateTotal(cid);
+        });
+    });
+}
+
+document.querySelectorAll('.party-input, .especial-card input').forEach(function(input) {
+    input.addEventListener('input', function() {
+        updateTotal(this.dataset.cargo);
+    });
+});
+
+showSection(0);
+loadExistingVotes();
+</script>
+</body>
+</html>
