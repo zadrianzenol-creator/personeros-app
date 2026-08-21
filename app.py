@@ -91,10 +91,24 @@ def seed_admin():
     print(">> Admin creado (user: admin / pass: admin123)")
 
 
+def migrate_db():
+    try:
+        db.session.execute(db.text("ALTER TABLE votos ADD COLUMN IF NOT EXISTS cargo VARCHAR(50) NOT NULL DEFAULT 'regional'"))
+        db.session.execute(db.text("ALTER TABLE votos ADD COLUMN IF NOT EXISTS personero_id INTEGER"))
+        db.session.execute(db.text("ALTER TABLE votos_especiales ADD COLUMN IF NOT EXISTS cargo VARCHAR(50) NOT NULL DEFAULT 'regional'"))
+        db.session.execute(db.text("ALTER TABLE votos_especiales ADD COLUMN IF NOT EXISTS personero_id INTEGER"))
+        db.session.commit()
+        print(">> Migracion de columnas cargo/personero_id completada.")
+    except Exception as e:
+        db.session.rollback()
+        print(f">> Migracion ya aplicada o no necesaria: {e}")
+
+
 app = create_app()
 
 with app.app_context():
     db.create_all()
+    migrate_db()
     seed_colegios()
     seed_admin()
 
