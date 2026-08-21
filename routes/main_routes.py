@@ -135,11 +135,7 @@ def api_personeros():
             pass
     if search:
         query = query.filter(
-            db.or_(
-                Personero.nombre_completo.ilike(f"%{search}%"),
-                Personero.codigo.ilike(f"%{search}%"),
-                Personero.dni.ilike(f"%{search}%"),
-            )
+            Personero.dni.ilike(f"%{search}%")
         )
     if estado:
         query = query.filter_by(estado=estado)

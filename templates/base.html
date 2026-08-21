@@ -32,7 +32,11 @@
             </a>
             <a href="{{ url_for('main.registrar') }}" class="nav-item {% if request.endpoint == 'main.registrar' %}active{% endif %}">
                 <div class="nav-icon"><i class="fas fa-user-plus"></i></div>
-                <span>Registrar</span>
+                <span>Registrar Personero</span>
+            </a>
+            <a href="{{ url_for('votos.registrar_votos') }}" class="nav-item {% if request.endpoint == 'votos.registrar_votos' %}active{% endif %}">
+                <div class="nav-icon"><i class="fas fa-ballot-check"></i></div>
+                <span>Registrar Votos</span>
             </a>
         </nav>
 

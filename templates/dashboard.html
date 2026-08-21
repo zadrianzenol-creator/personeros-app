@@ -7,7 +7,7 @@
     <div class="stat-card accent">
         <div class="stat-icon" style="background: rgba(99,102,241,0.15); color: #818cf8;"><i class="fas fa-users"></i></div>
         <div class="stat-value" id="statTotalHoy">0</div>
-        <div class="stat-label">Registros Hoy</div>
+        <div class="stat-label">Personeros Hoy</div>
     </div>
     <div class="stat-card success">
         <div class="stat-icon" style="background: rgba(16,185,129,0.15); color: #6ee7b7;"><i class="fas fa-user-check"></i></div>
@@ -24,6 +24,9 @@
         <div class="stat-value" id="statPendientes">0</div>
         <div class="stat-label">Pendientes</div>
     </div>
+</div>
+
+<div class="stats-grid">
     <div class="stat-card info">
         <div class="stat-icon" style="background: rgba(6,182,212,0.15); color: #67e8f9;"><i class="fas fa-school"></i></div>
         <div class="stat-value" id="statColegios">0</div>
@@ -34,6 +37,16 @@
         <div class="stat-value" id="statMesas">0</div>
         <div class="stat-label">Mesas</div>
     </div>
+    <div class="stat-card success">
+        <div class="stat-icon" style="background: rgba(16,185,129,0.15); color: #6ee7b7;"><i class="fas fa-check-to-slot"></i></div>
+        <div class="stat-value" id="statTotalVotos">0</div>
+        <div class="stat-label">Total Votos</div>
+    </div>
+    <div class="stat-card info">
+        <div class="stat-icon" style="background: rgba(6,182,212,0.15); color: #67e8f9;"><i class="fas fa-landmark"></i></div>
+        <div class="stat-value" id="statPartidos">0</div>
+        <div class="stat-label">Partidos</div>
+    </div>
 </div>
 
 <div class="dashboard-grid">
@@ -42,7 +55,7 @@
             <div class="panel-header">
                 <h2><i class="fas fa-list-check"></i> Registro de Personeros</h2>
                 <div style="display:flex; gap:8px; flex-wrap:wrap;">
-                    <button class="btn btn-primary btn-sm" onclick="cargarPersoneros()"><i class="fas fa-sync-alt"></i> Actualizar</button>
+                    <button class="btn btn-primary btn-sm" onclick="cargarPersoneros()"><i class="fas fa-sync-alt"></i></button>
                     <a href="{{ url_for('main.registrar') }}" class="btn btn-secondary btn-sm"><i class="fas fa-plus"></i> Nuevo</a>
                 </div>
             </div>
@@ -61,7 +74,7 @@
                         <option value="AUSENTE">Ausente</option>
                         <option value="PENDIENTE">Pendiente</option>
                     </select>
-                    <input type="text" class="filter-input" id="filterSearch" placeholder="Buscar..." onkeyup="debounceSearch()" style="min-width:200px;">
+                    <input type="text" class="filter-input" id="filterSearch" placeholder="Buscar por DNI..." onkeyup="debounceSearch()" style="min-width:200px;">
                 </div>
                 <div class="table-wrap">
                     <table class="data-table">
@@ -90,10 +103,42 @@
     <div>
         <div class="panel">
             <div class="panel-header">
-                <h2><i class="fas fa-landmark"></i> Por Partido</h2>
+                <h2><i class="fas fa-check-to-slot"></i> Votos por Partido</h2>
+                <a href="{{ url_for('votos.registrar_votos') }}" class="btn btn-primary btn-sm"><i class="fas fa-plus"></i> Registrar</a>
             </div>
-            <div class="panel-body" id="partidosBody">
+            <div class="panel-body" id="votosPartidosBody">
                 <div class="empty-state"><i class="fas fa-spinner fa-spin"></i><p>Cargando...</p></div>
+            </div>
+        </div>
+
+        <div class="panel">
+            <div class="panel-header">
+                <h2><i class="fas fa-exclamation-triangle"></i> Votos Especiales</h2>
+            </div>
+            <div class="panel-body">
+                <div class="especiales-dash">
+                    <div class="especial-dash-item">
+                        <div class="especial-dash-icon"><i class="fas fa-file-circle-xmark"></i></div>
+                        <div class="especial-dash-info">
+                            <span class="especial-dash-label">Votos en Blanco</span>
+                            <span class="especial-dash-valor" id="statBlanco">0</span>
+                        </div>
+                    </div>
+                    <div class="especial-dash-item">
+                        <div class="especial-dash-icon nulo"><i class="fas fa-ban"></i></div>
+                        <div class="especial-dash-info">
+                            <span class="especial-dash-label">Votos Nulos</span>
+                            <span class="especial-dash-valor" id="statNulo">0</span>
+                        </div>
+                    </div>
+                    <div class="especial-dash-item">
+                        <div class="especial-dash-icon impugnado"><i class="fas fa-shield-halved"></i></div>
+                        <div class="especial-dash-info">
+                            <span class="especial-dash-label">Votos Impugnados</span>
+                            <span class="especial-dash-valor" id="statImpugnado">0</span>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -116,7 +161,6 @@
                     <a href="{{ url_for('main.detalle_colegio', colegio_id=c.id) }}" class="cole-card">
                         <h4>{{ c.nombre }}</h4>
                         <p>{{ c.distrito or '—' }}</p>
-                        <div class="cole-count" id="coleCount{{ c.id }}">—</div>
                     </a>
                     {% endfor %}
                 </div>
@@ -124,10 +168,73 @@
         </div>
     </div>
 </div>
+
+<style>
+.especiales-dash { display: flex; flex-direction: column; gap: 12px; }
+.especial-dash-item {
+    display: flex; align-items: center; gap: 14px;
+    padding: 14px 16px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+}
+.especial-dash-icon {
+    width: 44px; height: 44px; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.1rem; flex-shrink: 0;
+    background: rgba(148,163,184,0.1); color: #94a3b8;
+}
+.especial-dash-icon.nulo { background: rgba(239,68,68,0.1); color: #f87171; }
+.especial-dash-icon.impugnado { background: rgba(245,158,11,0.1); color: #fbbf24; }
+.especial-dash-info { display: flex; flex-direction: column; }
+.especial-dash-label { font-size: 0.78rem; color: var(--text-muted); }
+.especial-dash-valor { font-size: 1.5rem; font-weight: 800; color: var(--text-primary); }
+.voto-barra {
+    display: flex; align-items: center; gap: 10px; padding: 10px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+}
+.voto-barra:last-child { border-bottom: none; }
+.voto-barra-img {
+    width: 32px; height: 32px; border-radius: 8px;
+    object-fit: contain; background: rgba(255,255,255,0.05); flex-shrink: 0;
+}
+.voto-barra-info { flex: 1; min-width: 0; }
+.voto-barra-nombre { font-size: 0.78rem; font-weight: 600; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.voto-barra-track { height: 6px; background: rgba(255,255,255,0.05); border-radius: 3px; margin-top: 4px; }
+.voto-barra-fill { height: 100%; background: linear-gradient(90deg, #6366f1, #8b5cf6); border-radius: 3px; transition: width 0.5s ease; }
+.voto-barra-cant { font-size: 0.85rem; font-weight: 800; color: var(--accent-light); min-width: 40px; text-align: right; }
+@media (max-width: 768px) {
+    .especiales-dash { flex-direction: row; flex-wrap: wrap; }
+    .especial-dash-item { flex: 1; min-width: 140px; }
+}
+</style>
 {% endblock %}
 
 {% block scripts %}
 <script>
+const PARTIDOS_IMG = {
+    'Accion Popular': 'accion_popular.png',
+    'Alianza Electoral Venceremos': 'alianza_electoral_venceremos.png',
+    'Alianza para el Progreso': 'alianza_para_el_progreso.png',
+    'Frente Popular Agricola del Peru': 'frente_popular_agricola_fia_del_peru.png',
+    'Fuerza Ciudadana': 'fuerza_ciudadana.png',
+    'Fuerza Popular': 'fuerza_popular.png',
+    'Fuerza Regional': 'fuerza_regional.png',
+    'Partido Aprista Peruano': 'partido_aprista_peruano.png',
+    'Partido Democratico Somos Peru': 'partido_democratico_somos_peru.png',
+    'Partido de los Trabajadores y Emprendedores': 'partido_de_los_trabajadores_y_emprendedores_del_peru.png',
+    'Partido Pais para Todos': 'partido_pais_para_todos.png',
+    'Partido Patriotico del Peru': 'partido_patriotico_del_peru.png',
+    'Partido Politico Peru Primero': 'partido_politico_peru_primero.png',
+    'Partido Politico Pueblo Consciente': 'partido_politico_pueblo_consciente.png',
+    'Partido Popular Cristiano': 'partido_popular_cristiano.png',
+    'Podemos Peru': 'podemos_peru.png',
+    'Progresemos': 'progresemos.png',
+    'Renovacion Popular': 'renovacion_popular.png',
+    'Salvemos al Peru': 'salvemos_al_peru.png',
+    'Vision Peru': 'vision_peru.png',
+};
+
 let currentPage = 1;
 let searchTimeout = null;
 
@@ -207,22 +314,6 @@ function cargarStats() {
             document.getElementById('statColegios').textContent = data.colegios_con_personeros;
             document.getElementById('statMesas').textContent = data.mesas_con_personeros;
 
-            const partidos = document.getElementById('partidosBody');
-            const entries = Object.entries(data.por_partido);
-            if (!entries.length) {
-                partidos.innerHTML = '<div class="empty-state"><i class="fas fa-inbox"></i><p>Sin datos</p></div>';
-            } else {
-                partidos.innerHTML = entries.map(([p, c]) => `
-                    <div class="activity-item">
-                        <div class="activity-avatar" style="background:linear-gradient(135deg,#6366f1,#8b5cf6);"><i class="fas fa-landmark"></i></div>
-                        <div class="activity-info">
-                            <div class="activity-name">${p}</div>
-                            <div class="activity-detail">${c} personero(s)</div>
-                        </div>
-                    </div>
-                `).join('');
-            }
-
             const ultimos = document.getElementById('ultimosBody');
             if (!data.ultimos.length) {
                 ultimos.innerHTML = '<div class="empty-state"><i class="fas fa-inbox"></i><p>Sin registros</p></div>';
@@ -243,8 +334,45 @@ function cargarStats() {
         });
 }
 
+function cargarVotos() {
+    fetch('/votos/api/votos-resumen')
+        .then(r => r.json())
+        .then(data => {
+            document.getElementById('statTotalVotos').textContent = data.total_general;
+
+            const entries = Object.entries(data.por_partido).sort((a, b) => b[1].votos - a[1].votos);
+            document.getElementById('statPartidos').textContent = entries.length;
+
+            const maxVotos = Math.max(...entries.map(([, v]) => v.votos), 1);
+            const body = document.getElementById('votosPartidosBody');
+            if (!entries.length) {
+                body.innerHTML = '<div class="empty-state"><i class="fas fa-inbox"></i><p>Sin votos registrados</p></div>';
+            } else {
+                body.innerHTML = entries.map(([nombre, info]) => {
+                    const img = PARTIDOS_IMG[nombre] || '';
+                    const pct = Math.round((info.votos / maxVotos) * 100);
+                    return `
+                        <div class="voto-barra">
+                            <img src="/static/img/partidos/${img}" class="voto-barra-img" alt="${nombre}" onerror="this.style.display='none'">
+                            <div class="voto-barra-info">
+                                <div class="voto-barra-nombre">${info.sigla} — ${nombre}</div>
+                                <div class="voto-barra-track"><div class="voto-barra-fill" style="width:${pct}%"></div></div>
+                            </div>
+                            <div class="voto-barra-cant">${info.votos}</div>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            document.getElementById('statBlanco').textContent = data.especiales['BLANCO'] || 0;
+            document.getElementById('statNulo').textContent = data.especiales['NULO'] || 0;
+            document.getElementById('statImpugnado').textContent = data.especiales['IMPUGNADO'] || 0;
+        });
+}
+
 cargarPersoneros();
 cargarStats();
-setInterval(() => { cargarPersoneros(); cargarStats(); }, 30000);
+cargarVotos();
+setInterval(() => { cargarPersoneros(); cargarStats(); cargarVotos(); }, 30000);
 </script>
 {% endblock %}

@@ -1,0 +1,238 @@
+{% extends "base.html" %}
+{% block title %}Registrar Votos{% endblock %}
+{% block page_title %}Registrar Votos por Mesa{% endblock %}
+
+{% block content %}
+<div class="form-card" style="max-width:100%; width:100%;">
+    <h2><i class="fas fa-ballot-check"></i> Registro de Votos</h2>
+
+    <div class="form-section">
+        <div class="form-section-title"><i class="fas fa-school"></i> Seleccionar Mesa</div>
+        <div class="form-row">
+            <div class="form-group">
+                <label>Colegio <span class="req">*</span></label>
+                <select id="selectColegio" onchange="cargarMesas()" required>
+                    <option value="">Seleccione colegio...</option>
+                    {% for c in colegios %}
+                    <option value="{{ c.id }}">{{ c.nombre }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Mesa <span class="req">*</span></label>
+                <select id="selectMesa" required>
+                    <option value="">Seleccione mesa...</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <form method="POST" id="formVotos">
+        <input type="hidden" name="colegio_id" id="formColegioId">
+        <input type="hidden" name="mesa_id" id="formMesaId">
+
+        <div class="form-section">
+            <div class="form-section-title"><i class="fas fa-landmark"></i> Votos por Partido Politico</div>
+            <div class="partidos-grid">
+                {% for p in partidos %}
+                <div class="partido-card">
+                    <img src="{{ url_for('static', filename='img/partidos/' + p.imagen) }}" alt="{{ p.nombre }}" class="partido-img">
+                    <div class="partido-info">
+                        <span class="partido-sigla">{{ p.sigla }}</span>
+                        <span class="partido-nombre">{{ p.nombre }}</span>
+                    </div>
+                    <input type="number" name="voto_{{ p.id }}" min="0" value="0" class="voto-input" data-partido="{{ p.id }}">
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="form-section">
+            <div class="form-section-title"><i class="fas fa-exclamation-triangle"></i> Votos Especiales</div>
+            <div class="especiales-grid">
+                <div class="especial-card blanco">
+                    <i class="fas fa-file-circle-xmark"></i>
+                    <span>Votos en Blanco</span>
+                    <input type="number" name="voto_blanco" min="0" value="0" class="voto-input especial-input">
+                </div>
+                <div class="especial-card nulo">
+                    <i class="fas fa-ban"></i>
+                    <span>Votos Nulos</span>
+                    <input type="number" name="voto_nulo" min="0" value="0" class="voto-input especial-input">
+                </div>
+                <div class="especial-card impugnado">
+                    <i class="fas fa-shield-halved"></i>
+                    <span>Votos Impugnados</span>
+                    <input type="number" name="voto_impugnado" min="0" value="0" class="voto-input especial-input">
+                </div>
+            </div>
+        </div>
+
+        <div class="resumen-bar" id="resumenBar">
+            <span>Total Partidos: <strong id="totalPartidos">0</strong></span>
+            <span>Especiales: <strong id="totalEspeciales">0</strong></span>
+            <span class="total-general">TOTAL: <strong id="totalGeneral">0</strong></span>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-success"><i class="fas fa-save"></i> Guardar Votos</button>
+        </div>
+    </form>
+</div>
+
+<style>
+.partidos-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 12px;
+}
+.partido-card {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 12px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    transition: all 0.2s;
+}
+.partido-card:hover {
+    border-color: rgba(99,102,241,0.3);
+    background: rgba(99,102,241,0.05);
+}
+.partido-img {
+    width: 48px;
+    height: 48px;
+    border-radius: 10px;
+    object-fit: contain;
+    background: rgba(255,255,255,0.05);
+    flex-shrink: 0;
+}
+.partido-info {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+}
+.partido-sigla {
+    font-size: 0.78rem;
+    font-weight: 800;
+    color: var(--accent-light);
+}
+.partido-nombre {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.voto-input {
+    width: 64px;
+    padding: 8px;
+    text-align: center;
+    background: rgba(255,255,255,0.06);
+    border: 2px solid var(--border-color);
+    border-radius: 8px;
+    color: var(--text-primary);
+    font-size: 0.9rem;
+    font-weight: 700;
+    outline: none;
+    flex-shrink: 0;
+}
+.voto-input:focus {
+    border-color: rgba(99,102,241,0.5);
+}
+.especiales-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 12px;
+}
+.especial-card {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+.especial-card.blanco { border-color: rgba(148,163,184,0.3); }
+.especial-card.blanco i { color: #94a3b8; font-size: 1.2rem; }
+.especial-card.nulo { border-color: rgba(239,68,68,0.3); }
+.especial-card.nulo i { color: #f87171; font-size: 1.2rem; }
+.especial-card.impugnado { border-color: rgba(245,158,11,0.3); }
+.especial-card.impugnado i { color: #fbbf24; font-size: 1.2rem; }
+.resumen-bar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 24px;
+    padding: 14px 20px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    margin-top: 20px;
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+}
+.resumen-bar strong { color: var(--text-primary); font-weight: 800; }
+.resumen-bar .total-general {
+    font-size: 1rem;
+    color: var(--accent-light);
+}
+@media (max-width: 768px) {
+    .partidos-grid {
+        grid-template-columns: 1fr;
+    }
+    .especiales-grid {
+        grid-template-columns: 1fr;
+    }
+    .resumen-bar {
+        flex-direction: column;
+        gap: 8px;
+    }
+}
+</style>
+
+<script>
+function cargarMesas() {
+    const colegioId = document.getElementById('selectColegio').value;
+    const selectMesa = document.getElementById('selectMesa');
+    selectMesa.innerHTML = '<option value="">Cargando...</option>';
+    if (!colegioId) { selectMesa.innerHTML = '<option value="">Seleccione mesa...</option>'; return; }
+    fetch('/votos/api/mesas/' + colegioId)
+        .then(r => r.json())
+        .then(mesas => {
+            selectMesa.innerHTML = '<option value="">Seleccione mesa...</option>';
+            mesas.forEach(m => {
+                selectMesa.innerHTML += `<option value="${m.id}">Mesa ${m.numero}</option>`;
+            });
+        });
+}
+
+function calcularTotales() {
+    let totalP = 0, totalE = 0;
+    document.querySelectorAll('.partido-card .voto-input').forEach(i => { totalP += parseInt(i.value) || 0; });
+    document.querySelectorAll('.especial-input').forEach(i => { totalE += parseInt(i.value) || 0; });
+    document.getElementById('totalPartidos').textContent = totalP;
+    document.getElementById('totalEspeciales').textContent = totalE;
+    document.getElementById('totalGeneral').textContent = totalP + totalE;
+}
+
+document.querySelectorAll('.voto-input').forEach(i => {
+    i.addEventListener('input', calcularTotales);
+});
+
+document.getElementById('formVotos').addEventListener('submit', function(e) {
+    document.getElementById('formColegioId').value = document.getElementById('selectColegio').value;
+    document.getElementById('formMesaId').value = document.getElementById('selectMesa').value;
+    if (!document.getElementById('formColegioId').value || !document.getElementById('formMesaId').value) {
+        e.preventDefault();
+        alert('Seleccione colegio y mesa primero.');
+    }
+});
+</script>
+{% endblock %}

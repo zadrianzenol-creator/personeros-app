@@ -5,6 +5,7 @@ from database import db, init_db
 from models.user import User
 from routes.auth_routes import auth_bp
 from routes.main_routes import main_bp
+from routes.voto_routes import votos_bp
 
 
 def create_app():
@@ -24,6 +25,7 @@ def create_app():
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(main_bp)
+    app.register_blueprint(votos_bp, url_prefix="/votos")
 
     @app.route("/ping")
     def ping():
