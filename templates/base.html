@@ -27,10 +27,6 @@
         </div>
 
         <nav class="sidebar-nav">
-            <a href="{{ url_for('main.dashboard') }}" class="nav-item {% if request.endpoint == 'main.dashboard' %}active{% endif %}">
-                <div class="nav-icon"><i class="fas fa-chart-pie"></i></div>
-                <span>Dashboard</span>
-            </a>
             <a href="{{ url_for('main.registrar') }}" class="nav-item {% if request.endpoint == 'main.registrar' %}active{% endif %}">
                 <div class="nav-icon"><i class="fas fa-user-plus"></i></div>
                 <span>Registrar Personero</span>
@@ -38,6 +34,10 @@
             <a href="{{ url_for('votos.registrar_votos') }}" class="nav-item {% if request.endpoint == 'votos.registrar_votos' %}active{% endif %}">
                 <div class="nav-icon"><i class="fas fa-check-to-slot"></i></div>
                 <span>Registrar Votos</span>
+            </a>
+            <a href="{{ url_for('main.dashboard') }}" class="nav-item {% if request.endpoint == 'main.dashboard' %}active{% endif %}">
+                <div class="nav-icon"><i class="fas fa-chart-pie"></i></div>
+                <span>Dashboard</span>
             </a>
         </nav>
 
