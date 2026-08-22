@@ -50,7 +50,6 @@
         <table class="data-table">
             <thead>
                 <tr>
-                    <th>Código</th>
                     <th>Nombre</th>
                     <th>DNI</th>
                     <th>Mesa</th>
@@ -62,7 +61,6 @@
             <tbody>
                 {% for p in personeros %}
                 <tr>
-                    <td><span style="font-family:monospace; font-weight:700; color:#818cf8;">{{ p.codigo }}</span></td>
                     <td style="font-weight:600; color:var(--text-primary);">{{ p.nombre_completo }}</td>
                     <td style="font-family:monospace;">{{ p.dni }}</td>
                     <td><strong>{{ p.numero_mesa }}</strong></td>
@@ -71,7 +69,7 @@
                     <td>{{ p.incidente or 'NINGUNO' }}</td>
                 </tr>
                 {% else %}
-                <tr><td colspan="7" class="empty-state"><i class="fas fa-inbox"></i><p>Sin personeros registrados</p></td></tr>
+                <tr><td colspan="6" class="empty-state"><i class="fas fa-inbox"></i><p>Sin personeros registrados</p></td></tr>
                 {% endfor %}
             </tbody>
         </table>

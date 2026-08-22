@@ -27,26 +27,21 @@
             <div class="form-section-title"><i class="fas fa-id-card"></i> Datos de Identificación</div>
             <div class="form-row">
                 <div class="form-group">
-                    <label>Código <span class="req">*</span></label>
-                    <input type="text" name="codigo" id="fCodigo" placeholder="Ej: PER-012345" value="{{ form_data.get('codigo', '') }}" required style="text-transform:uppercase;">
-                </div>
-                <div class="form-group">
                     <label>DNI <span class="req">*</span></label>
                     <input type="text" name="dni" id="fDni" placeholder="Ej: 12345678" maxlength="12" value="{{ form_data.get('dni', '') }}" required>
                 </div>
-            </div>
-            <div class="form-group">
-                <label>Nombre Completo <span class="req">*</span></label>
-                <input type="text" name="nombre_completo" id="fNombre" placeholder="Ej: Juan Pérez López" value="{{ form_data.get('nombre_completo', '') }}" required>
+                <div class="form-group">
+                    <label>Nombre Completo <span class="req">*</span></label>
+                    <input type="text" name="nombre_completo" id="fNombre" placeholder="Ej: Juan Pérez López" value="{{ form_data.get('nombre_completo', '') }}" required>
+                </div>
             </div>
             <div class="form-row">
                 <div class="form-group">
                     <label>Teléfono</label>
                     <input type="text" name="telefono" id="fTelefono" placeholder="Ej: 912345678" maxlength="20" value="{{ form_data.get('telefono', '') }}">
                 </div>
-            </div>
-            <div class="form-group">
-                <label>Rol</label>
+                <div class="form-group">
+                    <label>Rol</label>
                 <select name="rol" id="fRol">
                     <option value="Personero" {{ 'selected' if form_data.get('rol') == 'Personero' }}>Personero</option>
                     <option value="Suplente" {{ 'selected' if form_data.get('rol') == 'Suplente' }}>Suplente</option>
@@ -115,7 +110,6 @@ function buscarDNI() {
             btn.innerHTML = '<i class="fas fa-search"></i> Buscar';
             btn.disabled = false;
             if (data.found) {
-                document.getElementById('fCodigo').value = data.codigo;
                 document.getElementById('fDni').value = data.dni;
                 document.getElementById('fNombre').value = data.nombre_completo;
                 document.getElementById('fTelefono').value = data.telefono || '';

@@ -62,7 +62,6 @@ class Personero(db.Model):
     )
 
     id = db.Column(db.Integer, primary_key=True)
-    codigo = db.Column(db.String(20), unique=True, nullable=False, index=True)
     nombre_completo = db.Column(db.String(200), nullable=False)
     dni = db.Column(db.String(12), nullable=False, index=True)
     telefono = db.Column(db.String(20), nullable=True)
@@ -77,12 +76,11 @@ class Personero(db.Model):
     ip_address = db.Column(db.String(45), nullable=True)
 
     def __repr__(self):
-        return f"<Personero {self.codigo} - {self.nombre_completo}>"
+        return f"<Personero {self.dni} - {self.nombre_completo}>"
 
     def to_dict(self):
         return {
             "id": self.id,
-            "codigo": self.codigo,
             "nombre_completo": self.nombre_completo,
             "dni": self.dni,
             "telefono": self.telefono,

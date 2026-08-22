@@ -80,7 +80,6 @@
                     <table class="data-table">
                         <thead>
                             <tr>
-                                <th>Código</th>
                                 <th>Nombre</th>
                                 <th>Colegio</th>
                                 <th>Mesa</th>
@@ -262,12 +261,11 @@ function cargarPersoneros(page) {
 function renderPersoneros(list) {
     const tbody = document.getElementById('personerosBody');
     if (!list.length) {
-        tbody.innerHTML = '<tr><td colspan="7" class="empty-state"><i class="fas fa-inbox"></i><p>Sin registros</p></td></tr>';
+        tbody.innerHTML = '<tr><td colspan="6" class="empty-state"><i class="fas fa-inbox"></i><p>Sin registros</p></td></tr>';
         return;
     }
     tbody.innerHTML = list.map(p => `
         <tr>
-            <td><span style="font-family:monospace; font-weight:700; color:#818cf8;">${p.codigo}</span></td>
             <td style="font-weight:600; color:var(--text-primary);">${p.nombre_completo}</td>
             <td>${p.colegio}</td>
             <td><strong>${p.numero_mesa}</strong></td>

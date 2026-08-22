@@ -93,7 +93,6 @@ def seed_from_json():
         if not mesa_id or not colegio_id:
             continue
         personero = Personero(
-            codigo=f"PER-{dni}",
             nombre_completo=nombre_completo,
             dni=dni,
             telefono=celular if celular else "",

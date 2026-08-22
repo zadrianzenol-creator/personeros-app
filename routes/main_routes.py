@@ -34,7 +34,6 @@ def registrar():
     use_mobile = is_mobile(request)
 
     if request.method == "POST":
-        codigo = request.form.get("codigo", "").strip().upper()
         nombre = request.form.get("nombre_completo", "").strip()
         dni = request.form.get("dni", "").strip()
         telefono = request.form.get("telefono", "").strip()
@@ -45,13 +44,8 @@ def registrar():
 
         template = "mobile_registrar.html" if use_mobile else "registrar.html"
 
-        if not codigo or not nombre or not dni or not colegio_id or not mesa_id or not numero_mesa:
+        if not nombre or not dni or not colegio_id or not mesa_id or not numero_mesa:
             flash("Complete todos los campos obligatorios.", "error")
-            return render_template(template, colegios=colegios, form_data=request.form)
-
-        existing = Personero.query.filter_by(codigo=codigo).first()
-        if existing:
-            flash("Este código ya está registrado.", "error")
             return render_template(template, colegios=colegios, form_data=request.form)
 
         dni_en_mesa = Personero.query.filter_by(dni=dni, mesa_id=mesa_id).first()
@@ -66,7 +60,6 @@ def registrar():
 
         now = peru_now()
         personero = Personero(
-            codigo=codigo,
             nombre_completo=nombre,
             dni=dni,
             telefono=telefono,
@@ -97,7 +90,6 @@ def api_personero_dni(dni):
     return jsonify({
         "found": True,
         "id": personero.id,
-        "codigo": personero.codigo,
         "nombre_completo": personero.nombre_completo,
         "dni": personero.dni,
         "telefono": personero.telefono or "",

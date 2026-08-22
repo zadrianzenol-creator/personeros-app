@@ -84,14 +84,6 @@
                 </div>
 
                 <div class="mobile-field">
-                    <label>Código <span class="req">*</span></label>
-                    <div class="input-icon">
-                        <i class="fas fa-barcode"></i>
-                        <input type="text" name="codigo" id="mCodigo" placeholder="PER-012345" required style="text-transform:uppercase; font-family:monospace; font-weight:700; font-size:1.1rem;">
-                    </div>
-                </div>
-
-                <div class="mobile-field">
                     <label>Nombre Completo <span class="req">*</span></label>
                     <div class="input-icon">
                         <i class="fas fa-user"></i>
@@ -176,10 +168,6 @@
 
             <div class="success-details" id="successDetails">
                 <div class="success-detail-row">
-                    <span class="success-detail-label">Código</span>
-                    <span class="success-detail-value" id="detailCodigo">—</span>
-                </div>
-                <div class="success-detail-row">
                     <span class="success-detail-label">Nombre</span>
                     <span class="success-detail-value" id="detailNombre">—</span>
                 </div>
@@ -240,7 +228,6 @@
                     btn.innerHTML = '<i class="fas fa-search"></i> Buscar';
                     btn.disabled = false;
                     if (data.found) {
-                        document.getElementById('mCodigo').value = data.codigo;
                         document.getElementById('mDni').value = data.dni;
                         document.getElementById('mNombre').value = data.nombre_completo;
                         document.getElementById('mTelefono').value = data.telefono || '';
@@ -381,13 +368,11 @@
             .then(response => response.text())
             .then(html => {
                 if (html.includes('Registro Exitoso') || html.includes('exitosamente')) {
-                    const codigo = formData.get('codigo');
                     const nombre = formData.get('nombre_completo');
                     const mesa = formData.get('numero_mesa');
                     const colegioSelect = document.getElementById('colegioSelect');
                     const colegioNombre = colegioSelect.options[colegioSelect.selectedIndex]?.text || '';
 
-                    document.getElementById('detailCodigo').textContent = codigo;
                     document.getElementById('detailNombre').textContent = nombre;
                     document.getElementById('detailMesa').textContent = 'Mesa ' + mesa;
                     document.getElementById('detailColegio').textContent = colegioNombre;
