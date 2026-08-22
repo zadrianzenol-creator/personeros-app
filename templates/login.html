@@ -3,309 +3,112 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Iniciar Sesión — Personeros</title>
+    <title>Iniciar Sesion - Personeros</title>
+    <link rel="icon" type="image/svg+xml" href="/static/img/favicon.svg">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-
-        body {
-            font-family: 'Inter', sans-serif;
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: #f0f2f5;
-            position: relative;
-        }
-
-        .bg-effects {
-            position: fixed;
-            inset: 0;
-            z-index: 0;
-            overflow: hidden;
-        }
-        .bg-effects .orb {
-            position: absolute;
-            border-radius: 50%;
-            filter: blur(120px);
-            opacity: 0.15;
-            animation: float 20s infinite ease-in-out;
-        }
-        .bg-effects .orb:nth-child(1) {
-            width: 600px; height: 600px;
-            background: radial-gradient(circle, #6366f1, transparent 70%);
-            top: -200px; left: -100px;
-            animation-delay: 0s;
-        }
-        .bg-effects .orb:nth-child(2) {
-            width: 500px; height: 500px;
-            background: radial-gradient(circle, #8b5cf6, transparent 70%);
-            bottom: -150px; right: -100px;
-            animation-delay: -7s;
-        }
-        .bg-effects .orb:nth-child(3) {
-            width: 400px; height: 400px;
-            background: radial-gradient(circle, #06b6d4, transparent 70%);
-            top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-            animation-delay: -14s;
-        }
-
-        @keyframes float {
-            0%, 100% { transform: translate(0, 0) scale(1); }
-            25% { transform: translate(50px, -30px) scale(1.1); }
-            50% { transform: translate(-30px, 50px) scale(0.95); }
-            75% { transform: translate(40px, 20px) scale(1.05); }
-        }
-
-        .grid-bg {
-            position: fixed;
-            inset: 0;
-            z-index: 0;
-            background-image:
-                linear-gradient(rgba(99, 102, 241, 0.04) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(99, 102, 241, 0.04) 1px, transparent 1px);
-            background-size: 60px 60px;
-        }
-
-        .login-container {
-            position: relative;
-            z-index: 10;
-            width: 100%;
-            max-width: 440px;
-            padding: 20px;
-        }
-
-        .login-card {
-            background: #ffffff;
-            border: 1px solid #e2e8f0;
-            border-radius: 24px;
-            padding: 48px 40px 40px;
-            box-shadow:
-                0 4px 20px rgba(0, 0, 0, 0.06),
-                0 25px 60px rgba(0, 0, 0, 0.08);
-            animation: cardIn 0.8s cubic-bezier(0.16, 1, 0.3, 1);
-            transform-style: preserve-3d;
-            perspective: 1000px;
-        }
-
-        @keyframes cardIn {
-            from { opacity: 0; transform: translateY(40px) rotateX(10deg); }
-            to { opacity: 1; transform: translateY(0) rotateX(0); }
-        }
-
-        .login-card:hover {
-            box-shadow:
-                0 4px 20px rgba(0, 0, 0, 0.06),
-                0 30px 70px rgba(0, 0, 0, 0.1);
-        }
-
-        .login-header { text-align: center; margin-bottom: 36px; }
-
-        .login-logo {
-            width: 72px; height: 72px;
-            margin: 0 auto 20px;
-            background: linear-gradient(135deg, #6366f1, #8b5cf6, #06b6d4);
-            border-radius: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.8rem;
-            color: white;
-            box-shadow: 0 8px 32px rgba(99, 102, 241, 0.3);
-        }
-
-        .login-header h1 {
-            font-size: 1.6rem;
-            font-weight: 800;
-            color: #1a1a2e;
-            letter-spacing: -0.5px;
-            margin-bottom: 6px;
-        }
-
-        .login-header p {
-            font-size: 0.88rem;
-            color: #94a3b8;
-        }
-
-        .error-box {
-            background: #fef2f2;
-            border: 1px solid #fecaca;
-            color: #991b1b;
-            padding: 14px 18px;
-            border-radius: 14px;
-            font-size: 0.84rem;
-            margin-bottom: 24px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            animation: shake 0.5s ease;
-        }
-
-        @keyframes shake {
-            0%, 100% { transform: translateX(0); }
-            20% { transform: translateX(-8px); }
-            40% { transform: translateX(8px); }
-            60% { transform: translateX(-4px); }
-            80% { transform: translateX(4px); }
-        }
-
-        .form-group {
-            margin-bottom: 20px;
-        }
-
-        .form-group label {
-            display: block;
-            font-size: 0.78rem;
-            font-weight: 600;
-            color: #475569;
-            margin-bottom: 8px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .input-wrapper {
-            position: relative;
-        }
-
-        .input-wrapper i {
-            position: absolute;
-            left: 16px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: #94a3b8;
-            font-size: 0.95rem;
-            transition: color 0.3s;
-            pointer-events: none;
-        }
-
-        .input-wrapper:focus-within i {
-            color: #6366f1;
-        }
-
-        .form-group input {
-            width: 100%;
-            padding: 14px 16px 14px 48px;
-            background: #f8fafc;
-            border: 2px solid #e2e8f0;
-            border-radius: 14px;
-            font-size: 0.95rem;
-            font-family: inherit;
-            color: #1a1a2e;
-            outline: none;
-            transition: all 0.3s;
-        }
-
-        .form-group input:focus {
-            border-color: rgba(139, 92, 246, 0.5);
-            background: #ffffff;
-            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
-        }
-
-        .form-group input::placeholder {
-            color: #94a3b8;
-        }
-
-        .btn-login {
-            width: 100%;
-            padding: 16px;
-            background: linear-gradient(135deg, #6366f1, #8b5cf6);
-            color: white;
-            border: none;
-            border-radius: 14px;
-            font-size: 0.95rem;
-            font-family: inherit;
-            font-weight: 700;
-            cursor: pointer;
-            transition: all 0.3s;
-            margin-top: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .btn-login::before {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background: linear-gradient(135deg, #818cf8, #a78bfa);
-            opacity: 0;
-            transition: opacity 0.3s;
-        }
-
-        .btn-login:hover::before { opacity: 1; }
-        .btn-login:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 12px 40px rgba(99, 102, 241, 0.3);
-        }
-        .btn-login:active { transform: translateY(0); }
-        .btn-login span { position: relative; z-index: 1; }
-
-        .login-footer {
-            text-align: center;
-            margin-top: 28px;
-            font-size: 0.75rem;
-            color: #94a3b8;
-        }
-
-        @media (max-width: 480px) {
-            .login-card { padding: 36px 24px 32px; }
-        }
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{font-family:'Inter',sans-serif;min-height:100vh;display:flex;overflow:hidden}
+        .login-split{display:flex;width:100%;min-height:100vh}
+        .login-left{flex:1;background:linear-gradient(135deg,#4f46e5 0%,#7c3aed 40%,#06b6d4 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:48px;position:relative;overflow:hidden}
+        .login-left::before{content:'';position:absolute;top:-120px;left:-120px;width:400px;height:400px;border-radius:50%;background:rgba(255,255,255,0.08);animation:floatOrb 8s ease-in-out infinite}
+        .login-left::after{content:'';position:absolute;bottom:-80px;right:-80px;width:300px;height:300px;border-radius:50%;background:rgba(255,255,255,0.06);animation:floatOrb 10s ease-in-out infinite reverse}
+        @keyframes floatOrb{0%,100%{transform:translate(0,0)}50%{transform:translate(30px,-20px)}}
+        .left-content{position:relative;z-index:2;text-align:center;max-width:400px}
+        .left-logo{width:88px;height:88px;margin:0 auto 28px;background:rgba(255,255,255,0.2);backdrop-filter:blur(10px);border:2px solid rgba(255,255,255,0.3);border-radius:24px;display:flex;align-items:center;justify-content:center;font-size:2.2rem;color:#fff}
+        .left-content h1{font-size:2rem;font-weight:800;color:#fff;margin-bottom:12px;line-height:1.2}
+        .left-content>p{font-size:1rem;color:rgba(255,255,255,0.8);line-height:1.6;margin-bottom:36px}
+        .feature-list{display:flex;flex-direction:column;gap:16px;text-align:left}
+        .feature-item{display:flex;align-items:center;gap:14px;color:rgba(255,255,255,0.9);font-size:0.9rem;font-weight:500}
+        .feature-icon{width:40px;height:40px;border-radius:12px;background:rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0}
+        .login-right{width:480px;display:flex;align-items:center;justify-content:center;padding:48px;background:#f8fafc}
+        .login-card{width:100%;max-width:380px;animation:cardIn 0.6s cubic-bezier(0.16,1,0.3,1)}
+        @keyframes cardIn{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+        .login-header{margin-bottom:32px}
+        .login-header h2{font-size:1.5rem;font-weight:800;color:#1a1a2e;margin-bottom:6px}
+        .login-header p{font-size:0.88rem;color:#64748b}
+        .error-box{background:#fef2f2;border:1px solid #fecaca;color:#991b1b;padding:12px 16px;border-radius:12px;font-size:0.84rem;margin-bottom:20px;display:flex;align-items:center;gap:10px;animation:shake 0.5s ease}
+        @keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-8px)}40%{transform:translateX(8px)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}
+        .form-group{margin-bottom:20px}
+        .form-group label{display:block;font-size:0.78rem;font-weight:600;color:#475569;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px}
+        .input-wrapper{position:relative}
+        .input-wrapper i{position:absolute;left:16px;top:50%;transform:translateY(-50%);color:#94a3b8;font-size:0.95rem;transition:color 0.3s;pointer-events:none}
+        .input-wrapper:focus-within i{color:#6366f1}
+        .form-group input{width:100%;padding:14px 16px 14px 48px;background:#fff;border:2px solid #e2e8f0;border-radius:12px;font-size:0.95rem;font-family:inherit;color:#1a1a2e;outline:none;transition:all 0.3s}
+        .form-group input:focus{border-color:#6366f1;box-shadow:0 0 0 4px rgba(99,102,241,0.1)}
+        .form-group input::placeholder{color:#94a3b8}
+        .btn-login{width:100%;padding:16px;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:white;border:none;border-radius:12px;font-size:0.95rem;font-family:inherit;font-weight:700;cursor:pointer;transition:all 0.3s;margin-top:8px;display:flex;align-items:center;justify-content:center;gap:10px;position:relative;overflow:hidden}
+        .btn-login::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,#818cf8,#a78bfa);opacity:0;transition:opacity 0.3s}
+        .btn-login:hover::before{opacity:1}
+        .btn-login:hover{transform:translateY(-2px);box-shadow:0 12px 40px rgba(99,102,241,0.3)}
+        .btn-login:active{transform:translateY(0)}
+        .btn-login span{position:relative;z-index:1}
+        .login-footer{text-align:center;margin-top:28px;font-size:0.75rem;color:#94a3b8}
+        .district-badge{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.2);border-radius:20px;font-size:0.82rem;font-weight:600;color:#fff;margin-top:24px}
+        @media(max-width:900px){.login-left{display:none}.login-right{width:100%;padding:24px}}
     </style>
 </head>
 <body>
-    <div class="bg-effects">
-        <div class="orb"></div>
-        <div class="orb"></div>
-        <div class="orb"></div>
-    </div>
-    <div class="grid-bg"></div>
-
-    <div class="login-container">
-        <div class="login-card">
-            <div class="login-header">
-                <div class="login-logo">
-                    <i class="fas fa-clipboard-check"></i>
-                </div>
-                <h1>Sistema de Personeros</h1>
-                <p>Control de asistencia electoral</p>
-            </div>
-
-            {% if error %}
-            <div class="error-box">
-                <i class="fas fa-exclamation-triangle"></i>
-                {{ error }}
-            </div>
-            {% endif %}
-
-            <form method="POST" action="{{ url_for('auth.login') }}">
-                <div class="form-group">
-                    <label>Usuario</label>
-                    <div class="input-wrapper">
-                        <i class="fas fa-user"></i>
-                        <input type="text" name="username" placeholder="Ingrese su usuario" autofocus required>
+    <div class="login-split">
+        <div class="login-left">
+            <div class="left-content">
+                <div class="left-logo"><i class="fas fa-clipboard-check"></i></div>
+                <h1>Sistema de<br>Personeros</h1>
+                <p>Plataforma integral para el control de asistencia electoral y conteo de votos en Chulucanas.</p>
+                <div class="feature-list">
+                    <div class="feature-item">
+                        <div class="feature-icon"><i class="fas fa-user-check"></i></div>
+                        <span>Registro y monitoreo de personeros</span>
+                    </div>
+                    <div class="feature-item">
+                        <div class="feature-icon"><i class="fas fa-check-double"></i></div>
+                        <span>Conteo de votos por partido y cargo</span>
+                    </div>
+                    <div class="feature-item">
+                        <div class="feature-icon"><i class="fas fa-chart-line"></i></div>
+                        <span>Dashboard en tiempo real</span>
                     </div>
                 </div>
-                <div class="form-group">
-                    <label>Contraseña</label>
-                    <div class="input-wrapper">
-                        <i class="fas fa-lock"></i>
-                        <input type="password" name="password" placeholder="Ingrese su contraseña" required>
-                    </div>
+                <div class="district-badge"><i class="fas fa-map-marker-alt"></i> Chulucanas, Piura</div>
+            </div>
+        </div>
+        <div class="login-right">
+            <div class="login-card">
+                <div class="login-header">
+                    <h2>Bienvenido</h2>
+                    <p>Inicie sesion para acceder al sistema</p>
                 </div>
-                <button type="submit" class="btn-login">
-                    <span><i class="fas fa-arrow-right"></i> Iniciar Sesión</span>
-                </button>
-            </form>
-
-            <div class="login-footer">
-                Sistema de Asistencia de Personeros v2.0
+                {% if error %}
+                <div class="error-box">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    {{ error }}
+                </div>
+                {% endif %}
+                <form method="POST" action="{{ url_for('auth.login') }}">
+                    <div class="form-group">
+                        <label>Usuario</label>
+                        <div class="input-wrapper">
+                            <i class="fas fa-user"></i>
+                            <input type="text" name="username" placeholder="Ingrese su usuario" autofocus required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Contrasena</label>
+                        <div class="input-wrapper">
+                            <i class="fas fa-lock"></i>
+                            <input type="password" name="password" placeholder="Ingrese su contrasena" required>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn-login">
+                        <span><i class="fas fa-arrow-right"></i> Iniciar Sesion</span>
+                    </button>
+                </form>
+                <div class="login-footer">
+                    Sistema de Asistencia de Personeros v2.0
+                </div>
             </div>
         </div>
     </div>
