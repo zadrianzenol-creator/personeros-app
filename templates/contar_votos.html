@@ -74,7 +74,7 @@
 </head>
 <body>
 <div class="header">
-    <div class="header-avatar">{{ personero.nombre_completo[:1].upper() }}</div>
+    <div class="header-avatar"><i class="fas fa-check-to-slot" style="font-size:1.1rem"></i></div>
     <div class="header-info">
         <div class="header-name">{{ personero.nombre_completo }}</div>
         <div class="header-detail">DNI: {{ personero.dni }} &mdash; Mesa {{ personero.numero_mesa }}</div>
@@ -91,7 +91,7 @@
 {% for cargo in cargos %}
 <div class="section {% if loop.first %}active{% endif %}" id="section-{{ cargo.id }}" data-cargo="{{ cargo.id }}">
     <div class="section-banner" style="background:{{ cargo.color_bg }};border:1px solid {{ cargo.color_border }}">
-        <h2 style="color:{{ cargo.color }}">{{ cargo.nombre }}</h2>
+        <h2 style="color:{{ cargo.color }}"><i class="fas fa-{{ 'landmark' if cargo.id == 'regional' else 'chart-bar' if cargo.id == 'consejero' else 'city' if cargo.id == 'provincial' else 'location-dot' }}"></i> {{ cargo.nombre }}</h2>
         <p style="color:{{ cargo.color }}">Ingrese los votos de cada partido</p>
         <div class="total-badge" style="background:{{ cargo.color_bg }};border:1px solid {{ cargo.color_border }};color:{{ cargo.color }}">
             <i class="fas fa-calculator"></i> Total: <span class="cargo-total" id="total-{{ cargo.id }}">0</span>
