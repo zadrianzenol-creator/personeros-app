@@ -1,3 +1,5 @@
+import os
+import json
 from flask import Flask, render_template, jsonify
 from flask_login import LoginManager
 from config import Config
@@ -46,33 +48,67 @@ def create_app():
     return app
 
 
-def seed_colegios():
-    from models.personero import Colegio, Mesa
+def seed_from_json():
+    from models.personero import Colegio, Mesa, Personero
 
-    if Colegio.query.first() is not None:
+    seed_path = os.path.join(os.path.dirname(__file__), "seed_data.json")
+    if not os.path.exists(seed_path):
+        print(">> seed_data.json no encontrado, saltando seed.")
         return
 
-    colegios_data = [
-        {"codigo": "COL-001", "nombre": "I.E.P. San Gabriel", "direccion": "Jr. Ica 431", "distrito": "Chulucanas", "num_mesas": 9},
-        {"codigo": "COL-002", "nombre": "I.E.P. San Ignacio de Loyola", "direccion": "Jr. Ayacucho 181", "distrito": "Chulucanas", "num_mesas": 12},
-        {"codigo": "COL-003", "nombre": "I.E. 14613 Jorge Duberly Benites Sánchez", "direccion": "Chulucanas", "distrito": "Chulucanas", "num_mesas": 10},
-        {"codigo": "COL-004", "nombre": "I.E. 14620 Señor de la Divina Misericordia", "direccion": "Chulucanas", "distrito": "Chulucanas", "num_mesas": 8},
-        {"codigo": "COL-005", "nombre": "I.E. 14612 Lusmila Briceño Carrasco", "direccion": "Ñacara", "distrito": "Chulucanas", "num_mesas": 6},
-        {"codigo": "COL-006", "nombre": "I.E. 14996 Chulucanas", "direccion": "Rinconada", "distrito": "Chulucanas", "num_mesas": 5},
-        {"codigo": "COL-007", "nombre": "I.E. 44", "direccion": "Batanes", "distrito": "Chulucanas", "num_mesas": 4},
-        {"codigo": "COL-008", "nombre": "I.E. 43", "direccion": "Cruz Pampa", "distrito": "Chulucanas", "num_mesas": 4},
-    ]
+    with open(seed_path, "r", encoding="utf-8") as f:
+        data = json.load(f)
 
-    for data in colegios_data:
-        num = data.pop("num_mesas", 5)
-        colegio = Colegio(**data)
+    locales = data.get("locales", {})
+    mesas_map = data.get("mesas", {})
+    personeros_list = data.get("personeros", [])
+
+    local_ids = {}
+    mesa_ids = {}
+    for local_id, nombre in locales.items():
+        colegio = Colegio(
+            codigo=f"COL-{local_id}",
+            nombre=nombre,
+            direccion="Chulucanas",
+            distrito="Chulucanas",
+        )
         db.session.add(colegio)
         db.session.flush()
-        for i in range(1, num + 1):
-            db.session.add(Mesa(numero=i, colegio_id=colegio.id, capacidad=400))
+        local_ids[local_id] = colegio.id
+
+        local_mesas = mesas_map.get(local_id, [])
+        for num in local_mesas:
+            mesa = Mesa(numero=num, colegio_id=colegio.id, capacidad=400)
+            db.session.add(mesa)
+            db.session.flush()
+            mesa_ids[(local_id, num)] = mesa.id
 
     db.session.commit()
-    print(">> Colegios y mesas creados correctamente.")
+    print(f">> {len(locales)} colegios y mesas creados desde seed_data.json")
+
+    num = 0
+    for local_id, mesa_num, dni, nombre_completo, celular in personeros_list:
+        mesa_id = mesa_ids.get((local_id, mesa_num))
+        colegio_id = local_ids.get(local_id)
+        if not mesa_id or not colegio_id:
+            continue
+        personero = Personero(
+            codigo=f"PER-{dni}",
+            nombre_completo=nombre_completo,
+            dni=dni,
+            telefono=celular if celular else "",
+            rol="Personero",
+            colegio_id=colegio_id,
+            mesa_id=mesa_id,
+            numero_mesa=mesa_num,
+            estado="PENDIENTE",
+            incidente="NINGUNO",
+        )
+        db.session.add(personero)
+        num += 1
+
+    db.session.commit()
+    print(f">> {num} personeros importados desde seed_data.json")
 
 
 def seed_admin():
@@ -91,25 +127,12 @@ def seed_admin():
     print(">> Admin creado (user: admin / pass: admin123)")
 
 
-def migrate_db():
-    try:
-        db.session.execute(db.text("ALTER TABLE votos ADD COLUMN IF NOT EXISTS cargo VARCHAR(50) NOT NULL DEFAULT 'regional'"))
-        db.session.execute(db.text("ALTER TABLE votos ADD COLUMN IF NOT EXISTS personero_id INTEGER"))
-        db.session.execute(db.text("ALTER TABLE votos_especiales ADD COLUMN IF NOT EXISTS cargo VARCHAR(50) NOT NULL DEFAULT 'regional'"))
-        db.session.execute(db.text("ALTER TABLE votos_especiales ADD COLUMN IF NOT EXISTS personero_id INTEGER"))
-        db.session.commit()
-        print(">> Migracion de columnas cargo/personero_id completada.")
-    except Exception as e:
-        db.session.rollback()
-        print(f">> Migracion ya aplicada o no necesaria: {e}")
-
-
 app = create_app()
 
 with app.app_context():
+    db.drop_all()
     db.create_all()
-    migrate_db()
-    seed_colegios()
+    seed_from_json()
     seed_admin()
 
 if __name__ == "__main__":
