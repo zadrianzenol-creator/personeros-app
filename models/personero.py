@@ -66,7 +66,6 @@ class Personero(db.Model):
     nombre_completo = db.Column(db.String(200), nullable=False)
     dni = db.Column(db.String(12), nullable=False, index=True)
     telefono = db.Column(db.String(20), nullable=True)
-    partido_politico = db.Column(db.String(150), nullable=False)
     rol = db.Column(db.String(50), nullable=False, default="Personero")
     colegio_id = db.Column(db.Integer, db.ForeignKey("colegios.id"), nullable=False)
     mesa_id = db.Column(db.Integer, db.ForeignKey("mesas.id"), nullable=False)
@@ -87,7 +86,6 @@ class Personero(db.Model):
             "nombre_completo": self.nombre_completo,
             "dni": self.dni,
             "telefono": self.telefono,
-            "partido_politico": self.partido_politico,
             "rol": self.rol,
             "colegio": self.colegio.nombre if self.colegio else "",
             "colegio_codigo": self.colegio.codigo if self.colegio else "",

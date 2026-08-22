@@ -53,7 +53,6 @@
                     <th>Código</th>
                     <th>Nombre</th>
                     <th>DNI</th>
-                    <th>Partido</th>
                     <th>Mesa</th>
                     <th>Hora</th>
                     <th>Estado</th>
@@ -66,14 +65,13 @@
                     <td><span style="font-family:monospace; font-weight:700; color:#818cf8;">{{ p.codigo }}</span></td>
                     <td style="font-weight:600; color:var(--text-primary);">{{ p.nombre_completo }}</td>
                     <td style="font-family:monospace;">{{ p.dni }}</td>
-                    <td><span class="badge badge-partido">{{ p.partido_politico }}</span></td>
                     <td><strong>{{ p.numero_mesa }}</strong></td>
                     <td>{{ p.hora_llegada or '—' }}</td>
                     <td><span class="badge badge-{{ p.estado.lower() }}">{{ p.estado }}</span></td>
                     <td>{{ p.incidente or 'NINGUNO' }}</td>
                 </tr>
                 {% else %}
-                <tr><td colspan="8" class="empty-state"><i class="fas fa-inbox"></i><p>Sin personeros registrados</p></td></tr>
+                <tr><td colspan="7" class="empty-state"><i class="fas fa-inbox"></i><p>Sin personeros registrados</p></td></tr>
                 {% endfor %}
             </tbody>
         </table>

@@ -44,10 +44,6 @@
                     <label>Teléfono</label>
                     <input type="text" name="telefono" id="fTelefono" placeholder="Ej: 912345678" maxlength="20" value="{{ form_data.get('telefono', '') }}">
                 </div>
-                <div class="form-group">
-                    <label>Partido Político <span class="req">*</span></label>
-                    <input type="text" name="partido_politico" id="fPartido" placeholder="Ej: Partido XYZ" value="{{ form_data.get('partido_politico', '') }}" required>
-                </div>
             </div>
             <div class="form-group">
                 <label>Rol</label>
@@ -123,7 +119,6 @@ function buscarDNI() {
                 document.getElementById('fDni').value = data.dni;
                 document.getElementById('fNombre').value = data.nombre_completo;
                 document.getElementById('fTelefono').value = data.telefono || '';
-                document.getElementById('fPartido').value = data.partido_politico;
                 document.getElementById('fRol').value = data.rol;
 
                 const colegioSelect = document.getElementById('colegioSelect');

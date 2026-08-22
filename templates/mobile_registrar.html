@@ -116,14 +116,6 @@
                 </div>
 
                 <div class="mobile-field">
-                    <label>Partido Político <span class="req">*</span></label>
-                    <div class="input-icon">
-                        <i class="fas fa-landmark"></i>
-                        <input type="text" name="partido_politico" id="mPartido" placeholder="Ej: Partido Político XYZ" required>
-                    </div>
-                </div>
-
-                <div class="mobile-field">
                     <label>Rol</label>
                     <select name="rol" id="mRol">
                         <option value="Personero">Personero</option>
@@ -252,7 +244,6 @@
                         document.getElementById('mDni').value = data.dni;
                         document.getElementById('mNombre').value = data.nombre_completo;
                         document.getElementById('mTelefono').value = data.telefono || '';
-                        document.getElementById('mPartido').value = data.partido_politico;
                         document.getElementById('mRol').value = data.rol;
 
                         const colegioSelect = document.getElementById('colegioSelect');

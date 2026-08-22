@@ -38,7 +38,6 @@ def registrar():
         nombre = request.form.get("nombre_completo", "").strip()
         dni = request.form.get("dni", "").strip()
         telefono = request.form.get("telefono", "").strip()
-        partido = request.form.get("partido_politico", "").strip()
         rol = request.form.get("rol", "Personero").strip()
         colegio_id = request.form.get("colegio_id", type=int)
         mesa_id = request.form.get("mesa_id", type=int)
@@ -46,7 +45,7 @@ def registrar():
 
         template = "mobile_registrar.html" if use_mobile else "registrar.html"
 
-        if not codigo or not nombre or not dni or not partido or not colegio_id or not mesa_id or not numero_mesa:
+        if not codigo or not nombre or not dni or not colegio_id or not mesa_id or not numero_mesa:
             flash("Complete todos los campos obligatorios.", "error")
             return render_template(template, colegios=colegios, form_data=request.form)
 
@@ -71,7 +70,6 @@ def registrar():
             nombre_completo=nombre,
             dni=dni,
             telefono=telefono,
-            partido_politico=partido,
             rol=rol,
             colegio_id=colegio_id,
             mesa_id=mesa_id,
@@ -103,7 +101,6 @@ def api_personero_dni(dni):
         "nombre_completo": personero.nombre_completo,
         "dni": personero.dni,
         "telefono": personero.telefono or "",
-        "partido_politico": personero.partido_politico,
         "rol": personero.rol,
         "colegio_id": personero.colegio_id,
         "colegio_nombre": personero.colegio.nombre if personero.colegio else "",
@@ -265,11 +262,7 @@ def api_stats():
 
     total_general = Personero.query.count()
 
-    por_partido = db.session.query(
-        Personero.partido_politico, db.func.count(Personero.id)
-    ).group_by(Personero.partido_politico).order_by(
-        db.func.count(Personero.id).desc()
-    ).all()
+    por_partido = {}
 
     ultimos = Personero.query.order_by(
         Personero.fecha_registro.desc()
@@ -284,7 +277,7 @@ def api_stats():
         "colegios_con_personeros": stats.colegios if stats else 0,
         "mesas_con_personeros": stats.mesas if stats else 0,
         "registros_recientes": 0,
-        "por_partido": {p: c for p, c in por_partido},
+        "por_partido": {},
         "por_colegio": {},
         "ultimos": [p.to_dict() for p in ultimos],
     })
