@@ -42,6 +42,15 @@
     {% endfor %}
 </div>
 
+<style>
+@media(max-width:768px) {
+    .mesas-grid { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px; }
+    .mesa-card { padding: 12px 8px; }
+    .mesa-card h4 { font-size: 0.78rem; }
+    .mesa-count { font-size: 1.1rem; }
+}
+</style>
+
 <div class="panel">
     <div class="panel-header">
         <h2><i class="fas fa-list"></i> Todos los Personeros</h2>

@@ -759,12 +759,25 @@ body {
 
 /* RESPONSIVE */
 @media (max-width: 768px) {
+    /* SIDEBAR */
     .sidebar {
         transform: translateX(-100%);
+        width: 280px;
+        box-shadow: none;
     }
     .sidebar.open {
         transform: translateX(0);
+        box-shadow: 4px 0 40px rgba(0,0,0,0.2);
     }
+    .sidebar.open ~ .main-content::before {
+        content: '';
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.4);
+        z-index: 99;
+    }
+
+    /* MAIN */
     .main-content {
         margin-left: 0;
     }
@@ -774,38 +787,60 @@ body {
         justify-content: center;
     }
     .content-area {
-        padding: 16px 12px;
+        padding: 14px 10px;
     }
     .topbar {
         padding: 0 12px;
+        height: 56px;
     }
+    .topbar-actions .live-badge {
+        padding: 4px 10px;
+        font-size: 0.7rem;
+    }
+
+    /* STATS - 2 columnas compactas */
     .stats-grid {
         grid-template-columns: 1fr 1fr;
-        gap: 10px;
+        gap: 8px;
+        margin-bottom: 16px;
     }
     .stat-card {
-        padding: 16px;
+        padding: 14px 12px;
+        border-radius: 12px;
     }
     .stat-card .stat-value {
-        font-size: 1.5rem;
+        font-size: 1.4rem;
     }
     .stat-card .stat-icon {
-        width: 40px;
-        height: 40px;
-        font-size: 0.9rem;
-        margin-bottom: 10px;
+        width: 36px;
+        height: 36px;
+        font-size: 0.85rem;
+        margin-bottom: 8px;
+        border-radius: 10px;
     }
-    .form-row {
-        grid-template-columns: 1fr;
+    .stat-card .stat-label {
+        font-size: 0.7rem;
     }
-    .form-card {
-        padding: 24px 16px;
+
+    /* PANELS */
+    .panel {
+        border-radius: 14px;
+        margin-bottom: 14px;
     }
-    .dashboard-grid {
-        display: flex !important;
+    .panel-header {
+        padding: 12px 14px;
         flex-direction: column;
-        gap: 16px !important;
+        align-items: flex-start;
+        gap: 8px;
     }
+    .panel-header h2 {
+        font-size: 0.88rem;
+    }
+    .panel-body {
+        padding: 12px 14px;
+    }
+
+    /* FILTROS - columna */
     .filters-bar {
         flex-direction: column;
         gap: 8px;
@@ -813,21 +848,130 @@ body {
     .filter-input {
         width: 100%;
         min-width: unset;
+        padding: 10px 12px;
+        font-size: 0.82rem;
     }
-    .cole-grid {
-        grid-template-columns: 1fr;
+
+    /* TABLA - scroll horizontal */
+    .table-wrap {
+        margin: 0 -14px;
+        padding: 0 14px;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
     }
-    .panel-header {
-        padding: 14px 16px;
-    }
-    .panel-body {
-        padding: 14px 16px;
+    .data-table {
+        min-width: 500px;
     }
     .data-table th,
     .data-table td {
-        padding: 10px 12px;
+        padding: 8px 10px;
+        font-size: 0.78rem;
     }
+    .data-table th {
+        font-size: 0.68rem;
+        position: sticky;
+        top: 0;
+        background: var(--bg-card);
+        z-index: 2;
+    }
+
+    /* COLEGIO CARDS */
+    .cole-grid {
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+    .cole-card {
+        padding: 14px;
+        border-radius: 12px;
+    }
+    .cole-card h4 {
+        font-size: 0.85rem;
+    }
+    .cole-card p {
+        font-size: 0.72rem;
+    }
+
+    /* FORMS */
+    .form-row {
+        grid-template-columns: 1fr;
+    }
+    .form-card {
+        padding: 20px 16px;
+        border-radius: 14px;
+    }
+    .form-card h2 {
+        font-size: 1.1rem;
+        margin-bottom: 20px;
+    }
+
+    /* ACTIVITY ITEMS */
+    .activity-item {
+        padding: 10px 0;
+        gap: 10px;
+    }
+    .activity-avatar {
+        width: 34px;
+        height: 34px;
+        font-size: 0.75rem;
+    }
+    .activity-name {
+        font-size: 0.8rem;
+    }
+    .activity-detail {
+        font-size: 0.7rem;
+    }
+
+    /* EMPTY STATE */
+    .empty-state {
+        padding: 30px 16px;
+    }
+    .empty-state i {
+        font-size: 2rem;
+    }
+
+    /* PAGINATION */
+    .pagination {
+        padding: 12px;
+    }
+    .page-btn {
+        padding: 6px 10px;
+        font-size: 0.75rem;
+    }
+
+    /* DASHBOARD GRID */
+    .dashboard-grid {
+        display: flex !important;
+        flex-direction: column;
+        gap: 14px !important;
+    }
+
+    /* BADGES */
+    .badge {
+        padding: 3px 10px;
+        font-size: 0.68rem;
+    }
+
+    /* PAGE TITLE */
     .page-title {
-        font-size: 0.95rem;
+        font-size: 0.9rem;
+    }
+}
+
+@media (max-width: 400px) {
+    .stats-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 6px;
+    }
+    .stat-card {
+        padding: 12px 10px;
+    }
+    .stat-card .stat-value {
+        font-size: 1.2rem;
+    }
+    .stat-card .stat-label {
+        font-size: 0.65rem;
+    }
+    .content-area {
+        padding: 10px 8px;
     }
 }

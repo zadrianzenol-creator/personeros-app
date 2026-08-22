@@ -78,7 +78,7 @@
                 </div>
                 <div class="table-wrap">
                     <table class="data-table">
-                        <thead>
+                        <thead class="desktop-only">
                             <tr>
                                 <th>Nombre</th>
                                 <th>Colegio</th>
@@ -204,6 +204,7 @@
 @media (max-width: 768px) {
     .especiales-dash { flex-direction: row; flex-wrap: wrap; }
     .especial-dash-item { flex: 1; min-width: 140px; }
+    .desktop-only { display: none; }
 }
 </style>
 {% endblock %}
@@ -260,28 +261,60 @@ function cargarPersoneros(page) {
 
 function renderPersoneros(list) {
     const tbody = document.getElementById('personerosBody');
+    const isMobile = window.innerWidth <= 768;
     if (!list.length) {
         tbody.innerHTML = '<tr><td colspan="6" class="empty-state"><i class="fas fa-inbox"></i><p>Sin registros</p></td></tr>';
         return;
     }
-    tbody.innerHTML = list.map(p => `
-        <tr>
-            <td style="font-weight:600; color:var(--text-primary);">${p.nombre_completo}</td>
-            <td>${p.colegio}</td>
-            <td><strong>${p.numero_mesa}</strong></td>
-            <td>${p.hora_llegada}</td>
-            <td><span class="badge badge-${p.estado.toLowerCase()}">${p.estado}</span></td>
-            <td>
-                <form method="POST" action="/confirmar/${p.id}" style="display:inline;">
-                    <select name="estado" onchange="this.form.submit()" style="padding:5px 8px; border-radius:6px; border:1px solid var(--border-color); background:var(--bg-secondary); color:var(--text-primary); font-size:0.75rem; cursor:pointer;">
-                        <option value="PRESENTE" ${p.estado==='PRESENTE'?'selected':''}>PRESENTE</option>
-                        <option value="AUSENTE" ${p.estado==='AUSENTE'?'selected':''}>AUSENTE</option>
-                        <option value="PENDIENTE" ${p.estado==='PENDIENTE'?'selected':''}>PENDIENTE</option>
-                    </select>
-                </form>
-            </td>
-        </tr>
-    `).join('');
+    if (isMobile) {
+        tbody.innerHTML = list.map(p => `
+            <tr>
+                <td colspan="6" style="padding:0; border-bottom:1px solid var(--border-color);">
+                    <div style="padding:12px 14px;">
+                        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px;">
+                            <div style="flex:1; min-width:0;">
+                                <div style="font-weight:700; color:var(--text-primary); font-size:0.85rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${p.nombre_completo}</div>
+                                <div style="font-size:0.72rem; color:var(--text-muted); margin-top:2px;">${p.colegio}</div>
+                            </div>
+                            <span class="badge badge-${p.estado.toLowerCase()}" style="flex-shrink:0; margin-left:8px;">${p.estado}</span>
+                        </div>
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <div style="display:flex; gap:12px; font-size:0.75rem; color:var(--text-muted);">
+                                <span><i class="fas fa-table-cells"></i> Mesa ${p.numero_mesa}</span>
+                                <span><i class="fas fa-clock"></i> ${p.hora_llegada}</span>
+                            </div>
+                            <form method="POST" action="/confirmar/${p.id}" style="display:inline;">
+                                <select name="estado" onchange="this.form.submit()" style="padding:4px 6px; border-radius:6px; border:1px solid var(--border-color); background:var(--bg-secondary); color:var(--text-primary); font-size:0.7rem; cursor:pointer;">
+                                    <option value="PRESENTE" ${p.estado==='PRESENTE'?'selected':''}>PRESENTE</option>
+                                    <option value="AUSENTE" ${p.estado==='AUSENTE'?'selected':''}>AUSENTE</option>
+                                    <option value="PENDIENTE" ${p.estado==='PENDIENTE'?'selected':''}>PENDIENTE</option>
+                                </select>
+                            </form>
+                        </div>
+                    </div>
+                </td>
+            </tr>
+        `).join('');
+    } else {
+        tbody.innerHTML = list.map(p => `
+            <tr>
+                <td style="font-weight:600; color:var(--text-primary);">${p.nombre_completo}</td>
+                <td>${p.colegio}</td>
+                <td><strong>${p.numero_mesa}</strong></td>
+                <td>${p.hora_llegada}</td>
+                <td><span class="badge badge-${p.estado.toLowerCase()}">${p.estado}</span></td>
+                <td>
+                    <form method="POST" action="/confirmar/${p.id}" style="display:inline;">
+                        <select name="estado" onchange="this.form.submit()" style="padding:5px 8px; border-radius:6px; border:1px solid var(--border-color); background:var(--bg-secondary); color:var(--text-primary); font-size:0.75rem; cursor:pointer;">
+                            <option value="PRESENTE" ${p.estado==='PRESENTE'?'selected':''}>PRESENTE</option>
+                            <option value="AUSENTE" ${p.estado==='AUSENTE'?'selected':''}>AUSENTE</option>
+                            <option value="PENDIENTE" ${p.estado==='PENDIENTE'?'selected':''}>PENDIENTE</option>
+                        </select>
+                    </form>
+                </td>
+            </tr>
+        `).join('');
+    }
 }
 
 function renderPagination(total, pages, current) {
