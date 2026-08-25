@@ -40,13 +40,18 @@ def registrar():
         rol = request.form.get("rol", "Personero").strip()
         colegio_id = request.form.get("colegio_id", type=int)
         mesa_id = request.form.get("mesa_id", type=int)
-        numero_mesa = request.form.get("numero_mesa", "").strip()
 
         template = "mobile_registrar.html" if use_mobile else "registrar.html"
 
-        if not nombre or not dni or not colegio_id or not mesa_id or not numero_mesa:
+        if not nombre or not dni or not colegio_id or not mesa_id:
             flash("Complete todos los campos obligatorios.", "error")
             return render_template(template, colegios=colegios, form_data=request.form)
+
+        mesa_obj = Mesa.query.get(mesa_id)
+        if not mesa_obj:
+            flash("Mesa no válida.", "error")
+            return render_template(template, colegios=colegios, form_data=request.form)
+        numero_mesa = mesa_obj.numero
 
         dni_en_mesa = Personero.query.filter_by(dni=dni, mesa_id=mesa_id).first()
         if dni_en_mesa:

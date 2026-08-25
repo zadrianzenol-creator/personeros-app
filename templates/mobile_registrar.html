@@ -63,7 +63,7 @@
                 </div>
             </div>
             <div class="mobile-field" style="display:flex; gap:10px;">
-                <input type="text" id="dniSearchInput" placeholder="Ingrese DNI..." maxlength="12" inputmode="numeric" style="flex:1;">
+                        <input type="text" id="dniSearchInput" maxlength="12" inputmode="numeric" style="flex:1;">
                 <button type="button" class="mobile-btn mobile-btn-primary" onclick="buscarDNI()" id="btnBuscarDNI" style="white-space:nowrap; padding:0 20px;">
                     <i class="fas fa-search"></i> Buscar
                 </button>
@@ -87,7 +87,7 @@
                     <label>Nombre Completo <span class="req">*</span></label>
                     <div class="input-icon">
                         <i class="fas fa-user"></i>
-                        <input type="text" name="nombre_completo" id="mNombre" placeholder="Ej: Juan Pérez López" required>
+                        <input type="text" name="nombre_completo" id="mNombre" required>
                     </div>
                 </div>
 
@@ -95,7 +95,7 @@
                     <label>DNI <span class="req">*</span></label>
                     <div class="input-icon">
                         <i class="fas fa-fingerprint"></i>
-                        <input type="text" name="dni" id="mDni" placeholder="Ej: 12345678" maxlength="12" required inputmode="numeric">
+                        <input type="text" name="dni" id="mDni" maxlength="12" required inputmode="numeric">
                     </div>
                 </div>
 
@@ -103,7 +103,7 @@
                     <label>Teléfono</label>
                     <div class="input-icon">
                         <i class="fas fa-phone"></i>
-                        <input type="tel" name="telefono" id="mTelefono" placeholder="Ej: 912345678" inputmode="tel">
+                        <input type="tel" name="telefono" id="mTelefono" inputmode="tel">
                     </div>
                 </div>
 
@@ -144,11 +144,6 @@
                     <select name="mesa_id" id="mesaSelect" required>
                         <option value="">Seleccione colegio primero...</option>
                     </select>
-                </div>
-
-                <div class="mobile-field">
-                    <label>Nro. Mesa <span class="req">*</span></label>
-                    <input type="number" name="numero_mesa" id="numeroMesa" placeholder="Ej: 5" required min="1" inputmode="numeric">
                 </div>
             </div>
 
@@ -346,11 +341,6 @@
                 });
         });
 
-        document.getElementById('mesaSelect').addEventListener('change', function() {
-            const num = this.options[this.selectedIndex]?.textContent?.replace('Mesa ', '').trim();
-            if (num) document.getElementById('numeroMesa').value = num;
-        });
-
         // FORM SUBMIT VIA AJAX
         document.getElementById('registroForm').addEventListener('submit', function(e) {
             e.preventDefault();
@@ -369,12 +359,13 @@
             .then(html => {
                 if (html.includes('Registro Exitoso') || html.includes('exitosamente')) {
                     const nombre = formData.get('nombre_completo');
-                    const mesa = formData.get('numero_mesa');
+                    const mesaSelect = document.getElementById('mesaSelect');
+                    const mesa = mesaSelect.options[mesaSelect.selectedIndex]?.text || '';
                     const colegioSelect = document.getElementById('colegioSelect');
                     const colegioNombre = colegioSelect.options[colegioSelect.selectedIndex]?.text || '';
 
                     document.getElementById('detailNombre').textContent = nombre;
-                    document.getElementById('detailMesa').textContent = 'Mesa ' + mesa;
+                    document.getElementById('detailMesa').textContent = mesa;
                     document.getElementById('detailColegio').textContent = colegioNombre;
 
                     document.getElementById('formContainer').style.display = 'none';
@@ -431,11 +422,6 @@
                             mesaSelect.appendChild(opt);
                         });
                     });
-            });
-
-            document.getElementById('mesaSelect')?.addEventListener('change', function() {
-                const num = this.options[this.selectedIndex]?.textContent?.replace('Mesa ', '').trim();
-                if (num) document.getElementById('numeroMesa').value = num;
             });
         }
 
