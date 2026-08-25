@@ -30,61 +30,36 @@ def dashboard():
 
 @main_bp.route("/registrar", methods=["GET", "POST"])
 def registrar():
-    colegios = Colegio.query.filter_by(is_active=True).order_by(Colegio.nombre).all()
     use_mobile = is_mobile(request)
 
     if request.method == "POST":
-        nombre = request.form.get("nombre_completo", "").strip()
         dni = request.form.get("dni", "").strip()
-        telefono = request.form.get("telefono", "").strip()
-        rol = request.form.get("rol", "Personero").strip()
-        colegio_id = request.form.get("colegio_id", type=int)
-        mesa_id = request.form.get("mesa_id", type=int)
-
         template = "mobile_registrar.html" if use_mobile else "registrar.html"
 
-        if not nombre or not dni or not colegio_id or not mesa_id:
-            flash("Complete todos los campos obligatorios.", "error")
-            return render_template(template, colegios=colegios, form_data=request.form)
+        if not dni:
+            flash("Ingrese un DNI válido.", "error")
+            return render_template(template)
 
-        mesa_obj = Mesa.query.get(mesa_id)
-        if not mesa_obj:
-            flash("Mesa no válida.", "error")
-            return render_template(template, colegios=colegios, form_data=request.form)
-        numero_mesa = mesa_obj.numero
+        personero = Personero.query.filter_by(dni=dni).first()
+        if not personero:
+            flash(f"El DNI {dni} no se encuentra registrado en el sistema.", "error")
+            return render_template(template)
 
-        dni_en_mesa = Personero.query.filter_by(dni=dni, mesa_id=mesa_id).first()
-        if dni_en_mesa:
-            flash("Este DNI ya está registrado en esta mesa.", "error")
-            return render_template(template, colegios=colegios, form_data=request.form)
-
-        dni_en_colegio = Personero.query.filter_by(dni=dni, colegio_id=colegio_id).first()
-        if dni_en_colegio:
-            flash("Este DNI ya está registrado en este colegio.", "error")
-            return render_template(template, colegios=colegios, form_data=request.form)
+        if personero.estado == "PRESENTE":
+            flash(f"{personero.nombre_completo} ya fue registrado(a) anteriormente.", "error")
+            return render_template(template)
 
         now = peru_now()
-        personero = Personero(
-            nombre_completo=nombre,
-            dni=dni,
-            telefono=telefono,
-            rol=rol,
-            colegio_id=colegio_id,
-            mesa_id=mesa_id,
-            numero_mesa=int(numero_mesa),
-            estado="PRESENTE",
-            incidente="NINGUNO",
-            fecha_registro=now,
-            hora_llegada=now.strftime("%H:%M:%S"),
-            ip_address=request.remote_addr,
-        )
-        db.session.add(personero)
+        personero.estado = "PRESENTE"
+        personero.fecha_registro = now
+        personero.hora_llegada = now.strftime("%H:%M:%S")
+        personero.ip_address = request.remote_addr
         db.session.commit()
 
         return redirect(url_for("main.contar_votos", personero_id=personero.id))
 
     template = "mobile_registrar.html" if use_mobile else "registrar.html"
-    return render_template(template, colegios=colegios, form_data={})
+    return render_template(template)
 
 
 @main_bp.route("/api/personero-dni/<dni>")

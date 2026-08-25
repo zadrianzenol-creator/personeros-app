@@ -1,161 +1,338 @@
 {% extends "base.html" %}
 {% block title %}Registrar Personero{% endblock %}
-{% block page_title %}Registro de Personero{% endblock %}
+{% block page_title %}Registro de Asistencia{% endblock %}
 
 {% block content %}
-<div class="form-card">
-    <h2>
-        <i class="fas fa-user-plus" style="color: var(--accent-light);"></i>
-        Registrar Nuevo Personero
-    </h2>
-
-    <div class="dni-search-box" id="dniSearchBox">
-        <div class="form-section-title"><i class="fas fa-magnifying-glass"></i> Buscar por DNI</div>
-        <div class="form-row">
-            <div class="form-group" style="flex:1;">
-                <input type="text" id="dniSearchInput" placeholder="Ingrese DNI para auto-completar..." maxlength="12" style="text-transform:uppercase;">
-            </div>
-            <button type="button" class="btn btn-primary" onclick="buscarDNI()" id="btnBuscarDNI">
-                <i class="fas fa-search"></i> Buscar
-            </button>
+<div class="checkin-container">
+    <div class="checkin-hero">
+        <div class="checkin-hero-icon">
+            <i class="fas fa-user-check"></i>
         </div>
-        <div id="dniResult" style="display:none; margin-top:10px;"></div>
+        <h2>Registro de Asistencia</h2>
+        <p>Ingrese el DNI del personero para marcar su asistencia</p>
     </div>
 
-    <form method="POST" action="{{ url_for('main.registrar') }}">
-        <div class="form-section">
-            <div class="form-section-title"><i class="fas fa-id-card"></i> Datos de Identificación</div>
-            <div class="form-row">
-                <div class="form-group">
-                    <label>DNI <span class="req">*</span></label>
-                    <input type="text" name="dni" id="fDni" maxlength="12" value="{{ form_data.get('dni', '') }}" required>
-                </div>
-                <div class="form-group">
-                    <label>Nombre Completo <span class="req">*</span></label>
-                    <input type="text" name="nombre_completo" id="fNombre" value="{{ form_data.get('nombre_completo', '') }}" required>
-                </div>
+    <div class="checkin-form-card">
+        <div class="dni-input-group">
+            <div class="dni-input-wrapper">
+                <i class="fas fa-id-card"></i>
+                <input type="text" id="dniInput" placeholder="Ingrese DNI" maxlength="8" inputmode="numeric" autofocus>
+                <button type="button" class="dni-search-btn" id="searchBtn" onclick="buscarPersonero()">
+                    <i class="fas fa-arrow-right"></i>
+                </button>
             </div>
-            <div class="form-row">
-                <div class="form-group">
-                    <label>Teléfono</label>
-                    <input type="text" name="telefono" id="fTelefono" maxlength="20" value="{{ form_data.get('telefono', '') }}">
-                </div>
-                <div class="form-group">
-                    <label>Rol</label>
-                <select name="rol" id="fRol">
-                    <option value="Personero" {{ 'selected' if form_data.get('rol') == 'Personero' }}>Personero</option>
-                    <option value="Suplente" {{ 'selected' if form_data.get('rol') == 'Suplente' }}>Suplente</option>
-                    <option value="Apoderado" {{ 'selected' if form_data.get('rol') == 'Apoderado' }}>Apoderado</option>
-                    <option value="Observador" {{ 'selected' if form_data.get('rol') == 'Observador' }}>Observador</option>
-                </select>
-            </div>
+            <div id="dniHint" class="dni-hint">Presione Enter o toque el botón para buscar</div>
         </div>
 
-        <div class="form-section">
-            <div class="form-section-title"><i class="fas fa-school"></i> Ubicación de Votación</div>
-            <div class="form-group">
-                <label>Colegio / Local <span class="req">*</span></label>
-                <select name="colegio_id" id="colegioSelect" required>
-                    <option value="">Seleccione un colegio...</option>
-                    {% for c in colegios %}
-                    <option value="{{ c.id }}" {{ 'selected' if form_data.get('colegio_id')|int == c.id }}>
-                        {{ c.nombre }}{% if c.distrito %} — {{ c.distrito }}{% endif %}
-                    </option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div class="form-group">
-                    <label>Mesa <span class="req">*</span></label>
-                    <select name="mesa_id" id="mesaSelect" required>
-                        <option value="">Seleccione colegio primero...</option>
-                    </select>
+        <div id="personeroInfo" class="personero-info" style="display:none;">
+            <div class="personero-card">
+                <div class="personero-avatar">
+                    <span id="avatarLetter">?</span>
                 </div>
+                <div class="personero-details">
+                    <div class="personero-name" id="infoNombre">—</div>
+                    <div class="personero-dni-label">DNI: <span id="infoDni">—</span></div>
+                </div>
+            </div>
+
+            <div class="info-grid">
+                <div class="info-item">
+                    <div class="info-icon"><i class="fas fa-briefcase"></i></div>
+                    <div class="info-text">
+                        <span class="info-label">Rol</span>
+                        <span class="info-value" id="infoRol">—</span>
+                    </div>
+                </div>
+                <div class="info-item">
+                    <div class="info-icon"><i class="fas fa-phone"></i></div>
+                    <div class="info-text">
+                        <span class="info-label">Teléfono</span>
+                        <span class="info-value" id="infoTelefono">—</span>
+                    </div>
+                </div>
+                <div class="info-item">
+                    <div class="info-icon"><i class="fas fa-school"></i></div>
+                    <div class="info-text">
+                        <span class="info-label">Colegio</span>
+                        <span class="info-value" id="infoColegio">—</span>
+                    </div>
+                </div>
+                <div class="info-item">
+                    <div class="info-icon"><i class="fas fa-chair"></i></div>
+                    <div class="info-text">
+                        <span class="info-label">Mesa</span>
+                        <span class="info-value" id="infoMesa">—</span>
+                    </div>
+                </div>
+            </div>
+
+            <form method="POST" action="{{ url_for('main.registrar') }}" id="checkinForm">
+                <input type="hidden" name="dni" id="submitDni">
+                <button type="submit" class="btn btn-primary checkin-submit">
+                    <i class="fas fa-check-circle"></i> Confirmar Asistencia
+                </button>
+            </form>
         </div>
 
-        <div class="form-actions">
-            <button type="submit" class="btn btn-primary">
-                <i class="fas fa-save"></i> Registrar Personero
-            </button>
-            <a href="{{ url_for('main.dashboard') }}" class="btn btn-secondary">
-                <i class="fas fa-times"></i> Cancelar
-            </a>
-        </div>
-    </form>
+        <div id="dniError" class="dni-error" style="display:none;"></div>
+    </div>
 </div>
-{% endblock %}
 
-{% block scripts %}
+<style>
+.checkin-container {
+    max-width: 480px;
+    margin: 0 auto;
+    padding: 20px 0;
+}
+.checkin-hero {
+    text-align: center;
+    margin-bottom: 32px;
+}
+.checkin-hero-icon {
+    width: 80px;
+    height: 80px;
+    background: linear-gradient(135deg, #6366f1, #06b6d4);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    color: white;
+    margin: 0 auto 16px;
+    box-shadow: 0 12px 40px rgba(99, 102, 241, 0.3);
+}
+.checkin-hero h2 {
+    font-size: 1.4rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    margin-bottom: 6px;
+}
+.checkin-hero p {
+    font-size: 0.88rem;
+    color: var(--text-muted);
+}
+.checkin-form-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    padding: 28px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.04);
+}
+.dni-input-group { margin-bottom: 20px; }
+.dni-input-wrapper {
+    display: flex;
+    align-items: center;
+    background: #f8fafc;
+    border: 2px solid var(--border-color);
+    border-radius: 14px;
+    padding: 4px;
+    transition: all 0.3s;
+}
+.dni-input-wrapper:focus-within {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+}
+.dni-input-wrapper i {
+    padding: 0 16px;
+    color: var(--text-muted);
+    font-size: 1.1rem;
+}
+.dni-input-wrapper input {
+    flex: 1;
+    border: none;
+    background: transparent;
+    font-size: 1.3rem;
+    font-weight: 700;
+    font-family: inherit;
+    color: var(--text-primary);
+    outline: none;
+    padding: 14px 0;
+    letter-spacing: 2px;
+}
+.dni-input-wrapper input::placeholder {
+    font-weight: 400;
+    letter-spacing: 0;
+    font-size: 0.9rem;
+}
+.dni-search-btn {
+    width: 52px;
+    height: 52px;
+    border: none;
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    color: white;
+    border-radius: 12px;
+    font-size: 1.1rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+.dni-search-btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 16px rgba(99, 102, 241, 0.4);
+}
+.dni-hint {
+    text-align: center;
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    margin-top: 10px;
+}
+.personero-info {
+    animation: fadeUp 0.4s ease;
+}
+@keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.personero-card {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 16px;
+    background: linear-gradient(135deg, rgba(99,102,241,0.06), rgba(6,182,212,0.04));
+    border: 1px solid rgba(99,102,241,0.15);
+    border-radius: 14px;
+    margin-bottom: 20px;
+}
+.personero-avatar {
+    width: 52px;
+    height: 52px;
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    font-weight: 800;
+    color: white;
+    flex-shrink: 0;
+}
+.personero-name {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+.personero-dni-label {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin-top: 2px;
+}
+.info-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+.info-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px;
+    background: #f8fafc;
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+}
+.info-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, rgba(99,102,241,0.1), rgba(139,92,246,0.08));
+    color: var(--accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    flex-shrink: 0;
+}
+.info-label {
+    font-size: 0.68rem;
+    color: var(--text-muted);
+    display: block;
+}
+.info-value {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    display: block;
+}
+.checkin-submit {
+    width: 100%;
+    padding: 16px;
+    font-size: 1rem;
+    border-radius: 14px;
+}
+.dni-error {
+    padding: 14px 16px;
+    background: var(--danger-bg);
+    border: 1px solid #fecaca;
+    border-radius: 12px;
+    color: #991b1b;
+    font-size: 0.88rem;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+@media (max-width: 768px) {
+    .checkin-container { padding: 10px 0; }
+    .checkin-form-card { padding: 20px 16px; border-radius: 14px; }
+    .checkin-hero-icon { width: 64px; height: 64px; font-size: 1.5rem; }
+    .checkin-hero h2 { font-size: 1.15rem; }
+    .info-grid { grid-template-columns: 1fr; }
+}
+</style>
+
 <script>
-document.getElementById('dniSearchInput').addEventListener('keydown', function(e) {
-    if (e.key === 'Enter') { e.preventDefault(); buscarDNI(); }
+let foundPersonero = null;
+
+document.getElementById('dniInput').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') { e.preventDefault(); buscarPersonero(); }
 });
 
-function buscarDNI() {
-    const dni = document.getElementById('dniSearchInput').value.trim();
+function buscarPersonero() {
+    const dni = document.getElementById('dniInput').value.trim();
     if (!dni) return;
-    const result = document.getElementById('dniResult');
-    const btn = document.getElementById('btnBuscarDNI');
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Buscando...';
-    btn.disabled = true;
+
+    const btn = document.getElementById('searchBtn');
+    const hint = document.getElementById('dniHint');
+    const info = document.getElementById('personeroInfo');
+    const error = document.getElementById('dniError');
+
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+    hint.textContent = 'Buscando...';
+    info.style.display = 'none';
+    error.style.display = 'none';
 
     fetch('/api/personero-dni/' + dni)
         .then(r => r.json())
         .then(data => {
-            btn.innerHTML = '<i class="fas fa-search"></i> Buscar';
-            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-arrow-right"></i>';
             if (data.found) {
-                document.getElementById('fDni').value = data.dni;
-                document.getElementById('fNombre').value = data.nombre_completo;
-                document.getElementById('fTelefono').value = data.telefono || '';
-                document.getElementById('fRol').value = data.rol;
-
-                const colegioSelect = document.getElementById('colegioSelect');
-                if (colegioSelect) {
-                    for (let i = 0; i < colegioSelect.options.length; i++) {
-                        if (colegioSelect.options[i].value == data.colegio_id) {
-                            colegioSelect.selectedIndex = i;
-                            break;
-                        }
-                    }
-                    loadMesas(data.colegio_id, data.mesa_id);
-                }
-                result.innerHTML = '<div style="padding:10px; background:var(--success-bg); border:1px solid rgba(16,185,129,0.2); border-radius:10px; color:#6ee7b7; font-size:0.85rem;"><i class="fas fa-check-circle"></i> Personero encontrado. Datos auto-completados.</div>';
+                foundPersonero = data;
+                document.getElementById('avatarLetter').textContent = data.nombre_completo.charAt(0).toUpperCase();
+                document.getElementById('infoNombre').textContent = data.nombre_completo;
+                document.getElementById('infoDni').textContent = data.dni;
+                document.getElementById('infoRol').textContent = data.rol;
+                document.getElementById('infoTelefono').textContent = data.telefono || '—';
+                document.getElementById('infoColegio').textContent = data.colegio_nombre;
+                document.getElementById('infoMesa').textContent = 'Mesa ' + data.numero_mesa;
+                document.getElementById('submitDni').value = data.dni;
+                info.style.display = 'block';
+                hint.style.display = 'none';
             } else {
-                result.innerHTML = '<div style="padding:10px; background:var(--warning-bg); border:1px solid rgba(245,158,11,0.2); border-radius:10px; color:#fcd34d; font-size:0.85rem;"><i class="fas fa-exclamation-triangle"></i> DNI no encontrado. Complete el formulario manualmente.</div>';
+                error.innerHTML = '<i class="fas fa-exclamation-circle"></i> El DNI <strong>' + dni + '</strong> no se encuentra registrado en el sistema.';
+                error.style.display = 'block';
+                hint.textContent = 'Presione Enter o toque el botón para buscar';
             }
-            result.style.display = 'block';
         })
         .catch(err => {
-            btn.innerHTML = '<i class="fas fa-search"></i> Buscar';
-            btn.disabled = false;
-            result.innerHTML = '<div style="padding:10px; background:var(--danger-bg); border:1px solid rgba(239,68,68,0.2); border-radius:10px; color:#fca5a5; font-size:0.85rem;"><i class="fas fa-times-circle"></i> Error de conexión.</div>';
-            result.style.display = 'block';
+            btn.innerHTML = '<i class="fas fa-arrow-right"></i>';
+            error.innerHTML = '<i class="fas fa-exclamation-circle"></i> Error de conexión. Intente nuevamente.';
+            error.style.display = 'block';
+            hint.textContent = 'Presione Enter o toque el botón para buscar';
         });
 }
-
-function loadMesas(colegioId, selectedMesaId) {
-    const mesaSelect = document.getElementById('mesaSelect');
-    mesaSelect.innerHTML = '<option value="">Cargando...</option>';
-    if (!colegioId) {
-        mesaSelect.innerHTML = '<option value="">Seleccione colegio primero...</option>';
-        return;
-    }
-    fetch('/api/mesas/' + colegioId)
-        .then(r => r.json())
-        .then(mesas => {
-            mesaSelect.innerHTML = '<option value="">Seleccione mesa...</option>';
-            mesas.forEach(m => {
-                const opt = document.createElement('option');
-                opt.value = m.id;
-                opt.textContent = 'Mesa ' + m.numero;
-                if (selectedMesaId && m.id == selectedMesaId) opt.selected = true;
-                mesaSelect.appendChild(opt);
-            });
-        });
-}
-
-document.getElementById('colegioSelect').addEventListener('change', function() {
-    loadMesas(this.value, null);
-});
 </script>
 {% endblock %}
