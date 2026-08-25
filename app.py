@@ -51,6 +51,9 @@ def create_app():
 def seed_from_json():
     from models.personero import Colegio, Mesa, Personero
 
+    if Colegio.query.first() is not None:
+        return
+
     seed_path = os.path.join(os.path.dirname(__file__), "seed_data.json")
     if not os.path.exists(seed_path):
         print(">> seed_data.json no encontrado, saltando seed.")
@@ -129,7 +132,6 @@ def seed_admin():
 app = create_app()
 
 with app.app_context():
-    db.drop_all()
     db.create_all()
     seed_from_json()
     seed_admin()
