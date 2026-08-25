@@ -1,0 +1,462 @@
+{% extends "base.html" %}
+{% block title %}Monitoreo{% endblock %}
+{% block page_title %}Monitoreo en Tiempo Real{% endblock %}
+
+{% block content %}
+<div class="monitor-top-row">
+    <div class="monitor-stat-card online">
+        <div class="monitor-stat-icon" style="background:rgba(16,185,129,0.15);color:#6ee7b7;"><i class="fas fa-wifi"></i></div>
+        <div class="monitor-stat-value" id="onlineCount">0</div>
+        <div class="monitor-stat-label">En Linea</div>
+    </div>
+    <div class="monitor-stat-card present">
+        <div class="monitor-stat-icon" style="background:rgba(99,102,241,0.15);color:#818cf8;"><i class="fas fa-user-check"></i></div>
+        <div class="monitor-stat-value" id="presentesCount">0</div>
+        <div class="monitor-stat-label">Presentes</div>
+    </div>
+    <div class="monitor-stat-card absent">
+        <div class="monitor-stat-icon" style="background:rgba(239,68,68,0.15);color:#fca5a5;"><i class="fas fa-user-times"></i></div>
+        <div class="monitor-stat-value" id="ausentesCount">0</div>
+        <div class="monitor-stat-label">Ausentes</div>
+    </div>
+    <div class="monitor-stat-card votes">
+        <div class="monitor-stat-icon" style="background:rgba(245,158,11,0.15);color:#fcd34d;"><i class="fas fa-check-to-slot"></i></div>
+        <div class="monitor-stat-value" id="votosCount">0</div>
+        <div class="monitor-stat-label">Total Votos</div>
+    </div>
+</div>
+
+<div class="monitor-grid">
+    <div class="monitor-panel">
+        <div class="monitor-panel-header">
+            <h3><i class="fas fa-wifi" style="color:#10b981;"></i> En Linea Ahora</h3>
+            <span class="online-dot"></span>
+        </div>
+        <div class="monitor-panel-body" id="onlineList">
+            <div class="monitor-empty"><i class="fas fa-spinner fa-spin"></i><p>Cargando...</p></div>
+        </div>
+    </div>
+
+    <div class="monitor-panel">
+        <div class="monitor-panel-header">
+            <h3><i class="fas fa-school" style="color:#06b6d4;"></i> Asistencia por Colegio</h3>
+        </div>
+        <div class="monitor-panel-body" id="colegiosList">
+            <div class="monitor-empty"><i class="fas fa-spinner fa-spin"></i><p>Cargando...</p></div>
+        </div>
+    </div>
+</div>
+
+<div class="monitor-panel" style="margin-top:20px;">
+    <div class="monitor-panel-header">
+        <h3><i class="fas fa-clock-rotate-left" style="color:#8b5cf6;"></i> Historial de Actividad</h3>
+        <div class="monitor-filters">
+            <select id="filterTipo" onchange="cargarActividad(1)">
+                <option value="">Todos los tipos</option>
+                <option value="CHECK_IN">Check-in</option>
+                <option value="VOTOS_GUARDADOS">Votos Guardados</option>
+                <option value="ACCESO_VOTOS">Acceso Votos</option>
+                <option value="CAMBIO_ESTADO">Cambio Estado</option>
+                <option value="LOGIN">Login Admin</option>
+                <option value="LOGOUT">Logout Admin</option>
+            </select>
+            <input type="date" id="filterFecha" onchange="cargarActividad(1)">
+        </div>
+    </div>
+    <div class="monitor-panel-body" id="actividadList">
+        <div class="monitor-empty"><i class="fas fa-spinner fa-spin"></i><p>Cargando...</p></div>
+    </div>
+    <div class="monitor-pagination" id="actividadPagination"></div>
+</div>
+
+<div class="monitor-panel" id="personeroDetailPanel" style="display:none;margin-top:20px;">
+    <div class="monitor-panel-header">
+        <h3><i class="fas fa-user" style="color:#6366f1;"></i> Historial del Personero</h3>
+        <button class="monitor-close-btn" onclick="cerrarDetalle()"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="monitor-panel-body" id="personeroDetail"></div>
+</div>
+
+<style>
+.monitor-top-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+    margin-bottom: 24px;
+}
+.monitor-stat-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    padding: 20px;
+    text-align: center;
+    transition: all 0.3s;
+}
+.monitor-stat-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.08); }
+.monitor-stat-icon {
+    width: 48px; height: 48px; border-radius: 14px;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 1.1rem; margin-bottom: 12px;
+}
+.monitor-stat-value { font-size: 2rem; font-weight: 800; color: var(--text-primary); line-height: 1; }
+.monitor-stat-label { font-size: 0.78rem; color: var(--text-muted); margin-top: 4px; font-weight: 500; }
+
+.monitor-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+.monitor-panel {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    overflow: visible;
+}
+.monitor-panel-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+.monitor-panel-header h3 {
+    font-size: 0.92rem; font-weight: 700; color: var(--text-primary);
+    display: flex; align-items: center; gap: 8px;
+}
+.monitor-panel-body {
+    padding: 12px 16px;
+    max-height: 420px;
+    overflow-y: auto;
+}
+.monitor-empty {
+    text-align: center; padding: 30px; color: var(--text-muted);
+}
+.monitor-empty i { font-size: 1.5rem; opacity: 0.3; margin-bottom: 8px; display: block; }
+
+.online-dot {
+    width: 10px; height: 10px; background: #10b981; border-radius: 50%;
+    animation: pulse 2s infinite;
+}
+@keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(0.8)} }
+
+.online-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 12px; border-radius: 10px; margin-bottom: 6px;
+    background: rgba(16,185,129,0.04); border: 1px solid rgba(16,185,129,0.1);
+    cursor: pointer; transition: all 0.2s;
+}
+.online-item:hover { background: rgba(16,185,129,0.08); }
+.online-avatar {
+    width: 36px; height: 36px; border-radius: 10px;
+    background: linear-gradient(135deg, #10b981, #34d399);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.8rem; font-weight: 700; color: white; flex-shrink: 0;
+}
+.online-info { flex: 1; min-width: 0; }
+.online-name { font-size: 0.82rem; font-weight: 600; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.online-meta { font-size: 0.7rem; color: var(--text-muted); }
+.online-time { font-size: 0.7rem; color: #10b981; font-weight: 600; white-space: nowrap; }
+
+.colegio-progress { margin-bottom: 12px; }
+.colegio-progress-header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 6px;
+}
+.colegio-progress-name { font-size: 0.8rem; font-weight: 600; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.colegio-progress-pct { font-size: 0.78rem; font-weight: 700; color: var(--accent); }
+.colegio-progress-bar {
+    height: 8px; background: rgba(99,102,241,0.08); border-radius: 4px; overflow: hidden;
+}
+.colegio-progress-fill {
+    height: 100%; border-radius: 4px; transition: width 0.6s ease;
+    background: linear-gradient(90deg, #6366f1, #06b6d4);
+}
+.colegio-progress-counts { font-size: 0.68rem; color: var(--text-muted); margin-top: 4px; }
+
+.activity-item {
+    display: flex; align-items: flex-start; gap: 12px;
+    padding: 10px 0; border-bottom: 1px solid #f1f5f9;
+}
+.activity-item:last-child { border-bottom: none; }
+.activity-dot {
+    width: 8px; height: 8px; border-radius: 50%; margin-top: 6px; flex-shrink: 0;
+}
+.activity-dot.check-in { background: #10b981; }
+.activity-dot.votos { background: #6366f1; }
+.activity-dot.acceso { background: #06b6d4; }
+.activity-dot.estado { background: #f59e0b; }
+.activity-dot.login { background: #8b5cf6; }
+.activity-dot.logout { background: #ef4444; }
+.activity-dot.busqueda { background: #94a3b8; }
+.activity-body { flex: 1; min-width: 0; }
+.activity-tipo {
+    font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;
+    margin-bottom: 2px;
+}
+.activity-tipo.check-in { color: #10b981; }
+.activity-tipo.votos { color: #6366f1; }
+.activity-tipo.acceso { color: #06b6d4; }
+.activity-tipo.estado { color: #f59e0b; }
+.activity-tipo.login { color: #8b5cf6; }
+.activity-tipo.logout { color: #ef4444; }
+.activity-tipo.busqueda { color: #94a3b8; }
+.activity-text { font-size: 0.8rem; color: var(--text-secondary); }
+.activity-text strong { color: var(--text-primary); }
+.activity-footer { font-size: 0.68rem; color: var(--text-muted); margin-top: 3px; display: flex; gap: 12px; }
+
+.monitor-filters {
+    display: flex; gap: 8px; flex-wrap: wrap;
+}
+.monitor-filters select, .monitor-filters input {
+    padding: 6px 10px; border: 1px solid var(--border-color); border-radius: 8px;
+    font-size: 0.78rem; font-family: inherit; color: var(--text-primary);
+    background: var(--bg-secondary);
+}
+.monitor-pagination {
+    display: flex; justify-content: center; gap: 6px; padding: 12px;
+    border-top: 1px solid var(--border-color);
+}
+
+.monitor-close-btn {
+    width: 32px; height: 32px; border: 1px solid var(--border-color); border-radius: 8px;
+    background: var(--bg-secondary); color: var(--text-muted); cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+}
+
+.detail-header {
+    display: flex; align-items: center; gap: 16px; margin-bottom: 16px;
+    padding-bottom: 14px; border-bottom: 1px solid var(--border-color);
+}
+.detail-avatar {
+    width: 52px; height: 52px; border-radius: 14px;
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.3rem; font-weight: 800; color: white; flex-shrink: 0;
+}
+.detail-name { font-size: 1rem; font-weight: 700; color: var(--text-primary); }
+.detail-meta { font-size: 0.78rem; color: var(--text-muted); margin-top: 2px; }
+.detail-stats {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 16px;
+}
+.detail-stat {
+    text-align: center; padding: 10px; border-radius: 10px;
+    background: var(--bg-secondary); border: 1px solid var(--border-color);
+}
+.detail-stat-value { font-size: 1.2rem; font-weight: 800; color: var(--text-primary); }
+.detail-stat-label { font-size: 0.68rem; color: var(--text-muted); }
+
+@media (max-width: 768px) {
+    .monitor-top-row { grid-template-columns: 1fr 1fr; gap: 8px; }
+    .monitor-grid { grid-template-columns: 1fr; }
+    .monitor-stat-card { padding: 14px 10px; }
+    .monitor-stat-value { font-size: 1.4rem; }
+    .monitor-stat-label { font-size: 0.68rem; }
+    .monitor-panel-body { max-height: 320px; }
+    .monitor-filters { flex-direction: column; }
+    .detail-stats { grid-template-columns: 1fr; }
+}
+</style>
+
+<script>
+const TIPO_LABELS = {
+    'CHECK_IN': 'Check-in',
+    'VOTOS_GUARDADOS': 'Votos Guardados',
+    'ACCESO_VOTOS': 'Acceso Votos',
+    'CAMBIO_ESTADO': 'Cambio Estado',
+    'LOGIN': 'Login Admin',
+    'LOGOUT': 'Logout Admin',
+    'BUSQUEDA_DNI': 'Busqueda DNI',
+    'VOTOS_REGISTRADOS_ADMIN': 'Votos Admin',
+};
+
+const TIPO_DOT = {
+    'CHECK_IN': 'check-in',
+    'VOTOS_GUARDADOS': 'votos',
+    'ACCESO_VOTOS': 'acceso',
+    'CAMBIO_ESTADO': 'estado',
+    'LOGIN': 'login',
+    'LOGOUT': 'logout',
+    'BUSQUEDA_DNI': 'busqueda',
+    'VOTOS_REGISTRADOS_ADMIN': 'votos',
+};
+
+let currentActividadPage = 1;
+
+function cargarResumen() {
+    fetch('/api/monitoreo/resumen')
+        .then(r => r.json())
+        .then(data => {
+            document.getElementById('onlineCount').textContent = data.online;
+            document.getElementById('presentesCount').textContent = data.presentes;
+            document.getElementById('ausentesCount').textContent = data.ausentes;
+            document.getElementById('votosCount').textContent = data.total_votos.toLocaleString();
+
+            const coleGrid = document.getElementById('colegiosList');
+            if (!data.por_colegio.length) {
+                coleGrid.innerHTML = '<div class="monitor-empty"><i class="fas fa-inbox"></i><p>Sin datos</p></div>';
+                return;
+            }
+            coleGrid.innerHTML = data.por_colegio.map(c => `
+                <div class="colegio-progress">
+                    <div class="colegio-progress-header">
+                        <span class="colegio-progress-name">${c.nombre}</span>
+                        <span class="colegio-progress-pct">${c.porcentaje}%</span>
+                    </div>
+                    <div class="colegio-progress-bar"><div class="colegio-progress-fill" style="width:${c.porcentaje}%"></div></div>
+                    <div class="colegio-progress-counts">${c.presentes}/${c.total} presentes | ${c.ausentes} ausentes</div>
+                </div>
+            `).join('');
+        });
+}
+
+function cargarOnline() {
+    fetch('/api/monitoreo/online')
+        .then(r => r.json())
+        .then(data => {
+            const list = document.getElementById('onlineList');
+            if (!data.online.length) {
+                list.innerHTML = '<div class="monitor-empty"><i class="fas fa-wifi-slash"></i><p>Nadie en linea ahora</p></div>';
+                return;
+            }
+            list.innerHTML = data.online.map(p => `
+                <div class="online-item" onclick="verDetallePersonero(${p.id})">
+                    <div class="online-avatar">${p.nombre_completo.charAt(0)}</div>
+                    <div class="online-info">
+                        <div class="online-name">${p.nombre_completo}</div>
+                        <div class="online-meta">${p.colegio || ''} - Mesa ${p.numero_mesa}</div>
+                    </div>
+                    <div class="online-time">${p.last_active ? p.last_active.split(' ')[1] : ''}</div>
+                </div>
+            `).join('');
+        });
+}
+
+function cargarActividad(page) {
+    currentActividadPage = page || 1;
+    const params = new URLSearchParams({ page: currentActividadPage, per_page: 30 });
+    const tipo = document.getElementById('filterTipo').value;
+    const fecha = document.getElementById('filterFecha').value;
+    if (tipo) params.set('tipo', tipo);
+    if (fecha) params.set('fecha', fecha);
+
+    fetch('/api/monitoreo/actividad?' + params.toString())
+        .then(r => r.json())
+        .then(data => {
+            const list = document.getElementById('actividadList');
+            if (!data.actividades.length) {
+                list.innerHTML = '<div class="monitor-empty"><i class="fas fa-inbox"></i><p>Sin actividad registrada</p></div>';
+                document.getElementById('actividadPagination').innerHTML = '';
+                return;
+            }
+            list.innerHTML = data.actividades.map(a => {
+                const dotClass = TIPO_DOT[a.tipo] || 'busqueda';
+                const label = TIPO_LABELS[a.tipo] || a.tipo;
+                const nombre = a.personero_nombre || a.user_nombre || 'Sistema';
+                return `
+                    <div class="activity-item">
+                        <div class="activity-dot ${dotClass}"></div>
+                        <div class="activity-body">
+                            <div class="activity-tipo ${dotClass}">${label}</div>
+                            <div class="activity-text"><strong>${nombre}</strong> ${a.detalle}</div>
+                            <div class="activity-footer">
+                                <span><i class="fas fa-clock"></i> ${a.fecha}</span>
+                                ${a.ip_address ? '<span><i class="fas fa-globe"></i> ' + a.ip_address + '</span>' : ''}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            renderActividadPagination(data.pages, data.current_page);
+        });
+}
+
+function renderActividadPagination(pages, current) {
+    const div = document.getElementById('actividadPagination');
+    if (pages <= 1) { div.innerHTML = ''; return; }
+    let html = `<button class="page-btn" onclick="cargarActividad(${current-1})" ${current<=1?'disabled':''}><i class="fas fa-chevron-left"></i></button>`;
+    for (let i = 1; i <= pages; i++) {
+        if (i === 1 || i === pages || Math.abs(i - current) <= 2) {
+            html += `<button class="page-btn ${i===current?'active':''}" onclick="cargarActividad(${i})">${i}</button>`;
+        } else if (Math.abs(i - current) === 3) {
+            html += `<span style="color:var(--text-muted);padding:0 4px;">...</span>`;
+        }
+    }
+    html += `<button class="page-btn" onclick="cargarActividad(${current+1})" ${current>=pages?'disabled':''}><i class="fas fa-chevron-right"></i></button>`;
+    div.innerHTML = html;
+}
+
+function verDetallePersonero(id) {
+    const panel = document.getElementById('personeroDetailPanel');
+    const detail = document.getElementById('personeroDetail');
+    panel.style.display = 'block';
+    detail.innerHTML = '<div class="monitor-empty"><i class="fas fa-spinner fa-spin"></i><p>Cargando...</p></div>';
+    panel.scrollIntoView({ behavior: 'smooth' });
+
+    fetch('/api/monitoreo/personero/' + id)
+        .then(r => r.json())
+        .then(data => {
+            const p = data.personero;
+            const totalVotosPartidos = Object.values(data.votos).reduce((sum, c) => sum + c.total, 0);
+            const totalVotosEspeciales = Object.values(data.especiales).reduce((sum, c) => {
+                return sum + Object.values(c).reduce((s, v) => s + v, 0);
+            }, 0);
+
+            let html = `
+                <div class="detail-header">
+                    <div class="detail-avatar">${p.nombre_completo.charAt(0)}</div>
+                    <div>
+                        <div class="detail-name">${p.nombre_completo}</div>
+                        <div class="detail-meta">DNI: ${p.dni} | ${p.colegio} - Mesa ${p.numero_mesa}</div>
+                        <div class="detail-meta">Estado: <strong>${p.estado}</strong> | IP: ${p.ip_address || 'N/A'}</div>
+                    </div>
+                </div>
+                <div class="detail-stats">
+                    <div class="detail-stat">
+                        <div class="detail-stat-value" style="color:#10b981;">${data.actividades.length}</div>
+                        <div class="detail-stat-label">Acciones</div>
+                    </div>
+                    <div class="detail-stat">
+                        <div class="detail-stat-value" style="color:#6366f1;">${totalVotosPartidos + totalVotosEspeciales}</div>
+                        <div class="detail-stat-label">Votos Totales</div>
+                    </div>
+                    <div class="detail-stat">
+                        <div class="detail-stat-value" style="color:#f59e0b;">${Object.keys(data.votos).length}</div>
+                        <div class="detail-stat-label">Cargos Ingresados</div>
+                    </div>
+                </div>
+            `;
+
+            if (data.actividades.length > 0) {
+                html += '<h4 style="font-size:0.85rem;font-weight:700;margin-bottom:12px;color:var(--text-primary);">Timeline de Actividad</h4>';
+                html += data.actividades.map(a => {
+                    const dotClass = TIPO_DOT[a.tipo] || 'busqueda';
+                    const label = TIPO_LABELS[a.tipo] || a.tipo;
+                    return `
+                        <div class="activity-item">
+                            <div class="activity-dot ${dotClass}"></div>
+                            <div class="activity-body">
+                                <div class="activity-tipo ${dotClass}">${label}</div>
+                                <div class="activity-text">${a.detalle}</div>
+                                <div class="activity-footer"><span><i class="fas fa-clock"></i> ${a.fecha}</span></div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            detail.innerHTML = html;
+        });
+}
+
+function cerrarDetalle() {
+    document.getElementById('personeroDetailPanel').style.display = 'none';
+}
+
+cargarResumen();
+cargarOnline();
+cargarActividad(1);
+setInterval(() => { cargarResumen(); cargarOnline(); }, 15000);
+</script>
+{% endblock %}

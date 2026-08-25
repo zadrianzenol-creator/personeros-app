@@ -3,57 +3,70 @@
 {% block page_title %}Panel de Control{% endblock %}
 
 {% block content %}
-<div class="stats-grid">
-    <div class="stat-card accent">
-        <div class="stat-icon" style="background: rgba(99,102,241,0.15); color: #818cf8;"><i class="fas fa-users"></i></div>
-        <div class="stat-value" id="statTotalHoy">0</div>
-        <div class="stat-label">Personeros Hoy</div>
+<div style="display:none;" id="statTotalVotos">0</div>
+<div class="dash-hero">
+    <div class="dash-hero-text">
+        <h2>Bienvenido al Panel de Control</h2>
+        <p>Monitoreo en tiempo real del proceso electoral</p>
     </div>
-    <div class="stat-card success">
-        <div class="stat-icon" style="background: rgba(16,185,129,0.15); color: #6ee7b7;"><i class="fas fa-user-check"></i></div>
-        <div class="stat-value" id="statPresentes">0</div>
-        <div class="stat-label">Presentes</div>
-    </div>
-    <div class="stat-card danger">
-        <div class="stat-icon" style="background: rgba(239,68,68,0.15); color: #fca5a5;"><i class="fas fa-user-times"></i></div>
-        <div class="stat-value" id="statAusentes">0</div>
-        <div class="stat-label">Ausentes</div>
-    </div>
-    <div class="stat-card warning">
-        <div class="stat-icon" style="background: rgba(245,158,11,0.15); color: #fcd34d;"><i class="fas fa-hourglass-half"></i></div>
-        <div class="stat-value" id="statPendientes">0</div>
-        <div class="stat-label">Pendientes</div>
+    <div class="dash-hero-actions">
+        <a href="{{ url_for('main.monitoreo') }}" class="btn btn-primary"><i class="fas fa-satellite-dish"></i> Ver Monitoreo</a>
+        <a href="{{ url_for('votos.exportar_excel') }}" class="btn btn-success" target="_blank"><i class="fas fa-file-excel"></i> Excel</a>
+        <a href="{{ url_for('votos.exportar_pdf') }}" class="btn btn-danger" target="_blank"><i class="fas fa-file-pdf"></i> PDF</a>
     </div>
 </div>
 
-<div class="stats-grid">
-    <div class="stat-card info">
-        <div class="stat-icon" style="background: rgba(6,182,212,0.15); color: #67e8f9;"><i class="fas fa-school"></i></div>
-        <div class="stat-value" id="statColegios">0</div>
-        <div class="stat-label">Colegios</div>
+<div class="dash-kpi-row">
+    <div class="dash-kpi online">
+        <div class="dash-kpi-icon"><i class="fas fa-wifi"></i></div>
+        <div class="dash-kpi-content">
+            <div class="dash-kpi-value" id="statOnline">0</div>
+            <div class="dash-kpi-label">En Linea</div>
+        </div>
     </div>
-    <div class="stat-card accent">
-        <div class="stat-icon" style="background: rgba(99,102,241,0.15); color: #818cf8;"><i class="fas fa-table-cells"></i></div>
-        <div class="stat-value" id="statMesas">0</div>
-        <div class="stat-label">Mesas</div>
+    <div class="dash-kpi present">
+        <div class="dash-kpi-icon"><i class="fas fa-user-check"></i></div>
+        <div class="dash-kpi-content">
+            <div class="dash-kpi-value" id="statPresentes">0</div>
+            <div class="dash-kpi-label">Presentes</div>
+        </div>
     </div>
-    <div class="stat-card success">
-        <div class="stat-icon" style="background: rgba(16,185,129,0.15); color: #6ee7b7;"><i class="fas fa-check-to-slot"></i></div>
-        <div class="stat-value" id="statTotalVotos">0</div>
-        <div class="stat-label">Total Votos</div>
+    <div class="dash-kpi absent">
+        <div class="dash-kpi-icon"><i class="fas fa-user-times"></i></div>
+        <div class="dash-kpi-content">
+            <div class="dash-kpi-value" id="statAusentes">0</div>
+            <div class="dash-kpi-label">Ausentes</div>
+        </div>
     </div>
-    <div class="stat-card info">
-        <div class="stat-icon" style="background: rgba(6,182,212,0.15); color: #67e8f9;"><i class="fas fa-school"></i></div>
-        <div class="stat-value" id="statPartidos">0</div>
-        <div class="stat-label">Locales</div>
+    <div class="dash-kpi pending">
+        <div class="dash-kpi-icon"><i class="fas fa-hourglass-half"></i></div>
+        <div class="dash-kpi-content">
+            <div class="dash-kpi-value" id="statPendientes">0</div>
+            <div class="dash-kpi-label">Pendientes</div>
+        </div>
     </div>
 </div>
 
-<div class="dashboard-grid">
-    <div>
+<div class="dash-progress-section">
+    <div class="dash-progress-header">
+        <h3><i class="fas fa-chart-bar"></i> Asistencia General</h3>
+        <span class="dash-progress-pct" id="attendancePct">0%</span>
+    </div>
+    <div class="dash-progress-bar">
+        <div class="dash-progress-fill" id="attendanceFill" style="width:0%"></div>
+    </div>
+    <div class="dash-progress-legend">
+        <span><span class="legend-dot present"></span> Presentes: <strong id="legendPresentes">0</strong></span>
+        <span><span class="legend-dot absent"></span> Ausentes: <strong id="legendAusentes">0</strong></span>
+        <span><span class="legend-dot pending"></span> Pendientes: <strong id="legendPendientes">0</strong></span>
+    </div>
+</div>
+
+<div class="dash-grid">
+    <div class="dash-col-main">
         <div class="panel">
             <div class="panel-header">
-                <h2><i class="fas fa-list-check"></i> Registro de Personeros</h2>
+                <h2><i class="fas fa-users"></i> Registro de Personeros</h2>
                 <div style="display:flex; gap:8px; flex-wrap:wrap;">
                     <button class="btn btn-primary btn-sm" onclick="cargarPersoneros()"><i class="fas fa-sync-alt"></i></button>
                     <a href="{{ url_for('main.registrar') }}" class="btn btn-secondary btn-sm"><i class="fas fa-plus"></i> Nuevo</a>
@@ -85,11 +98,11 @@
                                 <th>Mesa</th>
                                 <th>Hora</th>
                                 <th>Estado</th>
-                                <th>Acción</th>
+                                <th>Accion</th>
                             </tr>
                         </thead>
                         <tbody id="personerosBody">
-                            <tr><td colspan="8" class="empty-state"><i class="fas fa-spinner fa-spin"></i><p>Cargando...</p></td></tr>
+                            <tr><td colspan="6" class="empty-state"><i class="fas fa-spinner fa-spin"></i><p>Cargando...</p></td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -98,11 +111,14 @@
         </div>
     </div>
 
-    <div>
+    <div class="dash-col-side">
         <div class="panel">
             <div class="panel-header">
                 <h2><i class="fas fa-check-to-slot"></i> Votos por Partido</h2>
-                <a href="{{ url_for('votos.registrar_votos') }}" class="btn btn-primary btn-sm"><i class="fas fa-plus"></i> Registrar</a>
+                <div style="display:flex;gap:6px;">
+                    <a href="{{ url_for('votos.exportar_excel') }}" class="btn btn-success btn-sm" target="_blank"><i class="fas fa-file-excel"></i></a>
+                    <a href="{{ url_for('votos.exportar_pdf') }}" class="btn btn-danger btn-sm" target="_blank"><i class="fas fa-file-pdf"></i></a>
+                </div>
             </div>
             <div class="panel-body" id="votosPartidosBody">
                 <div class="empty-state"><i class="fas fa-spinner fa-spin"></i><p>Cargando...</p></div>
@@ -142,7 +158,7 @@
 
         <div class="panel">
             <div class="panel-header">
-                <h2><i class="fas fa-clock-rotate-left"></i> Últimos Registros</h2>
+                <h2><i class="fas fa-clock-rotate-left"></i> Ultimos Registros</h2>
             </div>
             <div class="panel-body" id="ultimosBody" style="max-height: 360px; overflow-y: auto;">
                 <div class="empty-state"><i class="fas fa-spinner fa-spin"></i><p>Cargando...</p></div>
@@ -168,6 +184,62 @@
 </div>
 
 <style>
+.dash-hero {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 24px 28px; margin-bottom: 24px; border-radius: var(--radius);
+    background: linear-gradient(135deg, rgba(99,102,241,0.06), rgba(6,182,212,0.04));
+    border: 1px solid rgba(99,102,241,0.12);
+}
+.dash-hero-text h2 { font-size: 1.2rem; font-weight: 800; color: var(--text-primary); }
+.dash-hero-text p { font-size: 0.85rem; color: var(--text-muted); margin-top: 4px; }
+.dash-hero-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+.dash-kpi-row {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px;
+    margin-bottom: 20px;
+}
+.dash-kpi {
+    display: flex; align-items: center; gap: 14px;
+    padding: 18px 20px; border-radius: var(--radius);
+    background: var(--bg-card); border: 1px solid var(--border-color);
+    transition: all 0.3s;
+}
+.dash-kpi:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.06); }
+.dash-kpi-icon {
+    width: 44px; height: 44px; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1rem; flex-shrink: 0;
+}
+.dash-kpi.online .dash-kpi-icon { background: rgba(16,185,129,0.12); color: #10b981; }
+.dash-kpi.present .dash-kpi-icon { background: rgba(99,102,241,0.12); color: #6366f1; }
+.dash-kpi.absent .dash-kpi-icon { background: rgba(239,68,68,0.12); color: #ef4444; }
+.dash-kpi.pending .dash-kpi-icon { background: rgba(245,158,11,0.12); color: #f59e0b; }
+.dash-kpi-value { font-size: 1.6rem; font-weight: 800; color: var(--text-primary); line-height: 1; }
+.dash-kpi-label { font-size: 0.75rem; color: var(--text-muted); margin-top: 2px; font-weight: 500; }
+
+.dash-progress-section {
+    padding: 20px 24px; margin-bottom: 24px;
+    background: var(--bg-card); border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+}
+.dash-progress-header {
+    display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;
+}
+.dash-progress-header h3 { font-size: 0.9rem; font-weight: 700; display: flex; align-items: center; gap: 8px; color: var(--text-primary); }
+.dash-progress-pct { font-size: 1.1rem; font-weight: 800; color: var(--accent); }
+.dash-progress-bar { height: 12px; background: rgba(99,102,241,0.08); border-radius: 6px; overflow: hidden; }
+.dash-progress-fill { height: 100%; border-radius: 6px; background: linear-gradient(90deg, #6366f1, #06b6d4); transition: width 0.8s ease; }
+.dash-progress-legend { display: flex; gap: 20px; margin-top: 10px; font-size: 0.78rem; color: var(--text-muted); }
+.legend-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 4px; vertical-align: middle; }
+.legend-dot.present { background: #6366f1; }
+.legend-dot.absent { background: #ef4444; }
+.legend-dot.pending { background: #f59e0b; }
+
+.dash-grid {
+    display: grid; grid-template-columns: 1.4fr 1fr; gap: 20px;
+}
+.dash-col-main, .dash-col-side { display: flex; flex-direction: column; }
+
 .especiales-dash { display: flex; flex-direction: column; gap: 12px; }
 .especial-dash-item {
     display: flex; align-items: center; gap: 14px;
@@ -187,6 +259,7 @@
 .especial-dash-info { display: flex; flex-direction: column; }
 .especial-dash-label { font-size: 0.78rem; color: var(--text-muted); }
 .especial-dash-valor { font-size: 1.5rem; font-weight: 800; color: var(--text-primary); }
+
 .voto-barra {
     display: flex; align-items: center; gap: 10px; padding: 10px 0;
     border-bottom: 1px solid rgba(255,255,255,0.03);
@@ -201,7 +274,19 @@
 .voto-barra-track { height: 6px; background: rgba(255,255,255,0.05); border-radius: 3px; margin-top: 4px; }
 .voto-barra-fill { height: 100%; background: linear-gradient(90deg, #6366f1, #8b5cf6); border-radius: 3px; transition: width 0.5s ease; }
 .voto-barra-cant { font-size: 0.85rem; font-weight: 800; color: var(--accent-light); min-width: 40px; text-align: right; }
+
+@media (max-width: 1024px) {
+    .dash-grid { grid-template-columns: 1fr; }
+}
 @media (max-width: 768px) {
+    .dash-hero { flex-direction: column; text-align: center; gap: 14px; padding: 18px 16px; }
+    .dash-hero-actions { justify-content: center; }
+    .dash-kpi-row { grid-template-columns: 1fr 1fr; gap: 8px; }
+    .dash-kpi { padding: 14px 12px; }
+    .dash-kpi-value { font-size: 1.3rem; }
+    .dash-kpi-label { font-size: 0.68rem; }
+    .dash-progress-section { padding: 14px 16px; }
+    .dash-progress-legend { flex-wrap: wrap; gap: 10px; }
     .especiales-dash { flex-direction: row; flex-wrap: wrap; }
     .especial-dash-item { flex: 1; min-width: 140px; }
     .desktop-only { display: none; }
@@ -336,12 +421,18 @@ function cargarStats() {
     fetch('/api/stats')
         .then(r => r.json())
         .then(data => {
-            document.getElementById('statTotalHoy').textContent = data.total_hoy;
+            document.getElementById('statOnline').textContent = data.online_count || 0;
             document.getElementById('statPresentes').textContent = data.presentes_hoy;
             document.getElementById('statAusentes').textContent = data.ausentes_hoy;
             document.getElementById('statPendientes').textContent = data.pendientes_hoy;
-            document.getElementById('statColegios').textContent = data.colegios_con_personeros;
-            document.getElementById('statMesas').textContent = data.mesas_con_personeros;
+
+            const total = data.presentes_hoy + data.ausentes_hoy + data.pendientes_hoy;
+            const pct = total > 0 ? Math.round((data.presentes_hoy / total) * 100) : 0;
+            document.getElementById('attendancePct').textContent = pct + '%';
+            document.getElementById('attendanceFill').style.width = pct + '%';
+            document.getElementById('legendPresentes').textContent = data.presentes_hoy;
+            document.getElementById('legendAusentes').textContent = data.ausentes_hoy;
+            document.getElementById('legendPendientes').textContent = data.pendientes_hoy;
 
             const ultimos = document.getElementById('ultimosBody');
             if (!data.ultimos.length) {
@@ -369,8 +460,9 @@ function cargarVotos() {
         .then(data => {
             document.getElementById('statTotalVotos').textContent = data.total_general;
 
+            document.getElementById('statTotalVotos').textContent = data.total_general;
+
             const entries = Object.entries(data.por_partido).sort((a, b) => b[1].votos - a[1].votos);
-            document.getElementById('statPartidos').textContent = entries.length;
 
             const maxVotos = Math.max(...entries.map(([, v]) => v.votos), 1);
             const body = document.getElementById('votosPartidosBody');
