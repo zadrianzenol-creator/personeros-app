@@ -133,6 +133,33 @@ app = create_app()
 
 with app.app_context():
     db.create_all()
+
+    with db.engine.connect() as conn:
+        try:
+            conn.execute(db.text("ALTER TABLE personeros ADD COLUMN IF NOT EXISTS last_active TIMESTAMP"))
+            conn.commit()
+        except Exception:
+            pass
+        try:
+            conn.execute(db.text("""
+                CREATE TABLE IF NOT EXISTS activity_logs (
+                    id SERIAL PRIMARY KEY,
+                    personero_id INTEGER REFERENCES personeros(id),
+                    user_id INTEGER REFERENCES users(id),
+                    tipo VARCHAR(50) NOT NULL,
+                    detalle TEXT,
+                    ip_address VARCHAR(45),
+                    user_agent VARCHAR(300),
+                    fecha TIMESTAMP DEFAULT (NOW() AT TIME ZONE 'UTC' - INTERVAL '5 hours')
+                )
+            """))
+            conn.execute(db.text("CREATE INDEX IF NOT EXISTS idx_log_personero ON activity_logs(personero_id)"))
+            conn.execute(db.text("CREATE INDEX IF NOT EXISTS idx_log_fecha ON activity_logs(fecha)"))
+            conn.execute(db.text("CREATE INDEX IF NOT EXISTS idx_log_tipo ON activity_logs(tipo)"))
+            conn.commit()
+        except Exception:
+            pass
+
     seed_from_json()
     seed_admin()
 

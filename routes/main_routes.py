@@ -16,17 +16,20 @@ def is_mobile(request):
 
 
 def log_activity(tipo, detalle=None, personero_id=None, user_id=None, request_obj=None):
-    ip = request_obj.remote_addr if request_obj else None
-    ua_str = request_obj.headers.get("User-Agent", "")[:300] if request_obj else None
-    entry = ActivityLog(
-        personero_id=personero_id,
-        user_id=user_id,
-        tipo=tipo,
-        detalle=detalle,
-        ip_address=ip,
-        user_agent=ua_str,
-    )
-    db.session.add(entry)
+    try:
+        ip = request_obj.remote_addr if request_obj else None
+        ua_str = request_obj.headers.get("User-Agent", "")[:300] if request_obj else None
+        entry = ActivityLog(
+            personero_id=personero_id,
+            user_id=user_id,
+            tipo=tipo,
+            detalle=detalle,
+            ip_address=ip,
+            user_agent=ua_str,
+        )
+        db.session.add(entry)
+    except Exception:
+        pass
 
 
 def update_personero_active(personero):
