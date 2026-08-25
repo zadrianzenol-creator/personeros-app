@@ -14,18 +14,22 @@
 
 <div class="stats-grid">
     <div class="stat-card accent">
+        <div class="stat-icon" style="background: rgba(99,102,241,0.15); color: #818cf8;"><i class="fas fa-users"></i></div>
         <div class="stat-value">{{ personeros | length }}</div>
         <div class="stat-label">Total Personeros</div>
     </div>
     <div class="stat-card info">
+        <div class="stat-icon" style="background: rgba(6,182,212,0.15); color: #67e8f9;"><i class="fas fa-table-cells"></i></div>
         <div class="stat-value">{{ mesas | length }}</div>
         <div class="stat-label">Total Mesas</div>
     </div>
     <div class="stat-card success">
+        <div class="stat-icon" style="background: rgba(16,185,129,0.15); color: #6ee7b7;"><i class="fas fa-user-check"></i></div>
         <div class="stat-value">{{ personeros | selectattr('estado', 'equalto', 'PRESENTE') | list | length }}</div>
         <div class="stat-label">Presentes</div>
     </div>
     <div class="stat-card danger">
+        <div class="stat-icon" style="background: rgba(239,68,68,0.15); color: #fca5a5;"><i class="fas fa-user-times"></i></div>
         <div class="stat-value">{{ personeros | selectattr('estado', 'equalto', 'AUSENTE') | list | length }}</div>
         <div class="stat-label">Ausentes</div>
     </div>
@@ -57,7 +61,7 @@
     </div>
     <div class="table-wrap">
         <table class="data-table">
-            <thead>
+            <thead class="desktop-only">
                 <tr>
                     <th>Nombre</th>
                     <th>DNI</th>
@@ -70,12 +74,12 @@
             <tbody>
                 {% for p in personeros %}
                 <tr>
-                    <td style="font-weight:600; color:var(--text-primary);">{{ p.nombre_completo }}</td>
-                    <td style="font-family:monospace;">{{ p.dni }}</td>
-                    <td><strong>{{ p.numero_mesa }}</strong></td>
-                    <td>{{ p.hora_llegada or '—' }}</td>
-                    <td><span class="badge badge-{{ p.estado.lower() }}">{{ p.estado }}</span></td>
-                    <td>{{ p.incidente or 'NINGUNO' }}</td>
+                    <td data-label="Nombre" style="font-weight:600; color:var(--text-primary);">{{ p.nombre_completo }}</td>
+                    <td data-label="DNI" style="font-family:monospace;">{{ p.dni }}</td>
+                    <td data-label="Mesa"><strong>{{ p.numero_mesa }}</strong></td>
+                    <td data-label="Hora">{{ p.hora_llegada or '—' }}</td>
+                    <td data-label="Estado"><span class="badge badge-{{ p.estado.lower() }}">{{ p.estado }}</span></td>
+                    <td data-label="Incidente">{{ p.incidente or 'NINGUNO' }}</td>
                 </tr>
                 {% else %}
                 <tr><td colspan="6" class="empty-state"><i class="fas fa-inbox"></i><p>Sin personeros registrados</p></td></tr>
