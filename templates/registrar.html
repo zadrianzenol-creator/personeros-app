@@ -220,16 +220,16 @@
     margin-top: 2px;
 }
 .info-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
     margin-bottom: 20px;
 }
 .info-item {
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding: 12px;
+    gap: 12px;
+    padding: 14px;
     background: #f8fafc;
     border-radius: 12px;
     border: 1px solid var(--border-color);
@@ -280,7 +280,6 @@
     .checkin-form-card { padding: 20px 16px; border-radius: 14px; }
     .checkin-hero-icon { width: 64px; height: 64px; font-size: 1.5rem; }
     .checkin-hero h2 { font-size: 1.15rem; }
-    .info-grid { grid-template-columns: 1fr; }
 }
 </style>
 

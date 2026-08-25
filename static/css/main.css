@@ -759,6 +759,11 @@ body {
 
 /* RESPONSIVE */
 @media (max-width: 768px) {
+    html, body {
+        overflow-x: hidden;
+        -webkit-overflow-scrolling: touch;
+    }
+
     /* SIDEBAR */
     .sidebar {
         transform: translateX(-100%);
@@ -780,6 +785,8 @@ body {
     /* MAIN */
     .main-content {
         margin-left: 0;
+        max-width: 100%;
+        overflow-x: hidden;
     }
     .menu-toggle {
         display: flex;
@@ -787,7 +794,8 @@ body {
         justify-content: center;
     }
     .content-area {
-        padding: 14px 10px;
+        padding: 12px 10px;
+        overflow-x: hidden;
     }
     .topbar {
         padding: 0 12px;
@@ -802,30 +810,31 @@ body {
     .stats-grid {
         grid-template-columns: 1fr 1fr;
         gap: 8px;
-        margin-bottom: 16px;
+        margin-bottom: 14px;
     }
     .stat-card {
-        padding: 14px 12px;
+        padding: 12px 10px;
         border-radius: 12px;
     }
     .stat-card .stat-value {
-        font-size: 1.4rem;
+        font-size: 1.3rem;
     }
     .stat-card .stat-icon {
-        width: 36px;
-        height: 36px;
-        font-size: 0.85rem;
-        margin-bottom: 8px;
+        width: 34px;
+        height: 34px;
+        font-size: 0.8rem;
+        margin-bottom: 6px;
         border-radius: 10px;
     }
     .stat-card .stat-label {
-        font-size: 0.7rem;
+        font-size: 0.68rem;
     }
 
     /* PANELS */
     .panel {
         border-radius: 14px;
-        margin-bottom: 14px;
+        margin-bottom: 12px;
+        overflow: hidden;
     }
     .panel-header {
         padding: 12px 14px;
@@ -834,10 +843,10 @@ body {
         gap: 8px;
     }
     .panel-header h2 {
-        font-size: 0.88rem;
+        font-size: 0.85rem;
     }
     .panel-body {
-        padding: 12px 14px;
+        padding: 10px 12px;
     }
 
     /* FILTROS - columna */
@@ -850,29 +859,61 @@ body {
         min-width: unset;
         padding: 10px 12px;
         font-size: 0.82rem;
+        box-sizing: border-box;
     }
 
-    /* TABLA - scroll horizontal */
+    /* TABLA - mobile cards en vez de scroll horizontal */
     .table-wrap {
-        margin: 0 -14px;
-        padding: 0 14px;
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
+        margin: 0;
+        padding: 0;
+        overflow-x: hidden;
     }
+
     .data-table {
-        min-width: 500px;
+        width: 100%;
+        min-width: unset;
     }
-    .data-table th,
-    .data-table td {
-        padding: 8px 10px;
-        font-size: 0.78rem;
+
+    .data-table thead {
+        display: none;
     }
-    .data-table th {
-        font-size: 0.68rem;
-        position: sticky;
-        top: 0;
+
+    .data-table tbody {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .data-table tbody tr {
+        display: flex;
+        flex-direction: column;
         background: var(--bg-card);
-        z-index: 2;
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        padding: 12px;
+        gap: 4px;
+    }
+
+    .data-table tbody tr:hover td {
+        background: transparent;
+    }
+
+    .data-table td {
+        padding: 4px 0;
+        border-bottom: none;
+        font-size: 0.82rem;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .data-table td::before {
+        content: attr(data-label);
+        font-size: 0.7rem;
+        font-weight: 600;
+        color: var(--text-muted);
+        min-width: 70px;
+        flex-shrink: 0;
     }
 
     /* COLEGIO CARDS */
@@ -896,12 +937,13 @@ body {
         grid-template-columns: 1fr;
     }
     .form-card {
-        padding: 20px 16px;
+        padding: 16px;
         border-radius: 14px;
+        max-width: 100%;
     }
     .form-card h2 {
-        font-size: 1.1rem;
-        margin-bottom: 20px;
+        font-size: 1.05rem;
+        margin-bottom: 16px;
     }
 
     /* ACTIVITY ITEMS */
@@ -931,7 +973,8 @@ body {
 
     /* PAGINATION */
     .pagination {
-        padding: 12px;
+        padding: 10px;
+        flex-wrap: wrap;
     }
     .page-btn {
         padding: 6px 10px;
@@ -942,18 +985,39 @@ body {
     .dashboard-grid {
         display: flex !important;
         flex-direction: column;
-        gap: 14px !important;
+        gap: 12px !important;
     }
 
     /* BADGES */
     .badge {
-        padding: 3px 10px;
+        padding: 3px 8px;
         font-size: 0.68rem;
     }
 
     /* PAGE TITLE */
     .page-title {
         font-size: 0.9rem;
+    }
+
+    /* MESA CARDS */
+    .mesas-grid {
+        grid-template-columns: 1fr;
+        gap: 8px;
+    }
+
+    /* FORM SECTION */
+    .form-section {
+        margin-bottom: 16px;
+    }
+    .form-section-title {
+        font-size: 0.7rem;
+    }
+    .form-actions {
+        flex-direction: column;
+    }
+    .form-actions .btn {
+        width: 100%;
+        justify-content: center;
     }
 }
 
@@ -963,15 +1027,15 @@ body {
         gap: 6px;
     }
     .stat-card {
-        padding: 12px 10px;
+        padding: 10px 8px;
     }
     .stat-card .stat-value {
-        font-size: 1.2rem;
+        font-size: 1.1rem;
     }
     .stat-card .stat-label {
-        font-size: 0.65rem;
+        font-size: 0.62rem;
     }
     .content-area {
-        padding: 10px 8px;
+        padding: 8px 6px;
     }
 }
