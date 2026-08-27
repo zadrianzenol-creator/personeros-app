@@ -18,7 +18,10 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_ENGINE_OPTIONS = {
         "pool_pre_ping": True,
-        "pool_recycle": 300,
+        "pool_recycle": 280,
+        "pool_size": 8,
+        "max_overflow": 2,
+        "pool_timeout": 10,
     }
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = "Lax"
