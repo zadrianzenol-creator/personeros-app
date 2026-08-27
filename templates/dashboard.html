@@ -176,14 +176,25 @@
                     <a href="{{ url_for('votos.exportar_pdf') }}" class="btn btn-danger btn-sm" target="_blank"><i class="fas fa-file-pdf"></i></a>
                 </div>
             </div>
-            <div class="panel-body" id="votosPartidosBody">
-                <div class="empty-state"><i class="fas fa-spinner fa-spin"></i><p>Cargando...</p></div>
+            <div class="panel-body">
+                <div class="cargo-tabs" id="cargoTabs">
+                    {% for cargo in cargos %}
+                    <button type="button" class="cargo-tab {{ 'active' if loop.first }}" data-cargo="{{ cargo.id }}" style="--tab-color:{{ cargo.color }}" onclick="cambiarCargoDash('{{ cargo.id }}')">{{ cargo.nombre_corto }}</button>
+                    {% endfor %}
+                </div>
+                <p class="cargo-tabs-hint"><i class="fas fa-circle-info"></i> Resultados independientes por cargo de eleccion.</p>
+                <div id="votosPartidosBody">
+                    <div class="empty-state"><i class="fas fa-spinner fa-spin"></i><p>Cargando...</p></div>
+                </div>
+                <div class="cargo-total-badge" id="cargoTotalBadge" style="display:none;"></div>
+                <div class="cargo-summary-row" id="cargoSummaryRow"></div>
             </div>
         </div>
 
         <div class="panel">
             <div class="panel-header">
                 <h2><i class="fas fa-exclamation-triangle"></i> Votos Especiales</h2>
+                <span class="especiales-cargo-label" id="especialesCargoLabel"></span>
             </div>
             <div class="panel-body">
                 <div class="especiales-dash">
@@ -348,6 +359,37 @@
 .especial-dash-label { font-size: 0.78rem; color: var(--text-muted); }
 .especial-dash-valor { font-size: 1.5rem; font-weight: 800; color: var(--text-primary); }
 
+.cargo-tabs {
+    display: flex; gap: 4px; background: rgba(99,102,241,0.06);
+    border-radius: 10px; padding: 4px; margin-bottom: 10px;
+}
+.cargo-tab {
+    flex: 1; border: none; background: transparent; cursor: pointer;
+    padding: 8px 6px; border-radius: 8px; font-size: 0.76rem; font-weight: 700;
+    font-family: inherit; color: var(--text-muted); transition: all 0.2s;
+}
+.cargo-tab:hover { color: var(--text-primary); }
+.cargo-tab.active { background: var(--bg-card); color: var(--tab-color); box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+.cargo-tabs-hint { font-size: 0.7rem; color: var(--text-muted); margin-bottom: 12px; display: flex; align-items: center; gap: 6px; }
+.cargo-total-badge {
+    text-align: center; padding: 10px; margin-top: 4px; border-radius: 10px;
+    background: rgba(99,102,241,0.06); font-size: 0.82rem; color: var(--text-secondary); font-weight: 600;
+}
+.cargo-total-badge strong { font-size: 1.1rem; color: var(--accent); margin: 0 4px; }
+.cargo-summary-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 14px; }
+.cargo-summary-card {
+    text-align: center; padding: 12px 8px; border-radius: 12px;
+    background: rgba(255,255,255,0.03); border: 1px solid var(--border-color);
+}
+.cargo-summary-icon {
+    width: 30px; height: 30px; border-radius: 50%; margin: 0 auto 6px;
+    display: flex; align-items: center; justify-content: center; color: #fff; font-size: 0.75rem;
+}
+.cargo-summary-nombre { font-size: 0.68rem; color: var(--text-muted); font-weight: 600; }
+.cargo-summary-valor { font-size: 1.05rem; font-weight: 800; color: var(--text-primary); margin: 2px 0; }
+.cargo-summary-label { font-size: 0.6rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.3px; }
+.especiales-cargo-label { font-size: 0.72rem; font-weight: 700; color: var(--accent); }
+
 .voto-barra {
     display: flex; align-items: center; gap: 10px; padding: 10px 0;
     border-bottom: 1px solid rgba(255,255,255,0.03);
@@ -384,29 +426,6 @@
 
 {% block scripts %}
 <script>
-const PARTIDOS_IMG = {
-    'Accion Popular': 'accion_popular.png',
-    'Alianza Electoral Venceremos': 'alianza_electoral_venceremos.png',
-    'Alianza para el Progreso': 'alianza_para_el_progreso.png',
-    'Frente Popular Agricola del Peru': 'frente_popular_agricola_fia_del_peru.png',
-    'Fuerza Ciudadana': 'fuerza_ciudadana.png',
-    'Fuerza Popular': 'fuerza_popular.png',
-    'Fuerza Regional': 'fuerza_regional.png',
-    'Partido Aprista Peruano': 'partido_aprista_peruano.png',
-    'Partido Democratico Somos Peru': 'partido_democratico_somos_peru.png',
-    'Partido de los Trabajadores y Emprendedores': 'partido_de_los_trabajadores_y_emprendedores_del_peru.png',
-    'Partido Pais para Todos': 'partido_pais_para_todos.png',
-    'Partido Patriotico del Peru': 'partido_patriotico_del_peru.png',
-    'Partido Politico Peru Primero': 'partido_politico_peru_primero.png',
-    'Partido Politico Pueblo Consciente': 'partido_politico_pueblo_consciente.png',
-    'Partido Popular Cristiano': 'partido_popular_cristiano.png',
-    'Podemos Peru': 'podemos_peru.png',
-    'Progresemos': 'progresemos.png',
-    'Renovacion Popular': 'renovacion_popular.png',
-    'Salvemos al Peru': 'salvemos_al_peru.png',
-    'Vision Peru': 'vision_peru.png',
-};
-
 let currentPage = 1;
 let searchTimeout = null;
 
@@ -552,40 +571,85 @@ function cargarStats() {
         });
 }
 
+const CARGOS_DASH = [
+    {% for cargo in cargos %}
+    {id: "{{ cargo.id }}", nombre: "{{ cargo.nombre }}", nombre_corto: "{{ cargo.nombre_corto }}", color: "{{ cargo.color }}", icono: "{{ cargo.icono }}", imagen_folder: "{{ cargo.imagen_folder }}"}{% if not loop.last %},{% endif %}
+    {% endfor %}
+];
+let votosPorCargoData = null;
+let cargoDashActivo = CARGOS_DASH[0].id;
+
+function cambiarCargoDash(cargoId) {
+    cargoDashActivo = cargoId;
+    document.querySelectorAll('.cargo-tab').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.cargo === cargoId);
+    });
+    renderVotosCargo();
+}
+
+function renderVotosCargo() {
+    if (!votosPorCargoData) return;
+    const cargoInfo = CARGOS_DASH.find(c => c.id === cargoDashActivo);
+    const data = votosPorCargoData[cargoDashActivo] || { por_partido: {}, especiales: {}, total_partidos: 0, total_general: 0 };
+
+    const entries = Object.entries(data.por_partido).sort((a, b) => b[1].votos - a[1].votos);
+    const maxVotos = Math.max(...entries.map(([, v]) => v.votos), 1);
+    const body = document.getElementById('votosPartidosBody');
+    if (!entries.length) {
+        body.innerHTML = '<div class="empty-state"><i class="fas fa-inbox"></i><p>Sin votos registrados para ' + cargoInfo.nombre_corto + '</p></div>';
+    } else {
+        body.innerHTML = entries.map(([nombre, info]) => {
+            const img = info.imagen || '';
+            const pct = Math.round((info.votos / maxVotos) * 100);
+            return `
+                <div class="voto-barra">
+                    <img src="/static/img/${cargoInfo.imagen_folder}/${img}" class="voto-barra-img" alt="${nombre}" onerror="this.style.display='none'">
+                    <div class="voto-barra-info">
+                        <div class="voto-barra-nombre">${info.sigla} — ${nombre}</div>
+                        <div class="voto-barra-track"><div class="voto-barra-fill" style="width:${pct}%"></div></div>
+                    </div>
+                    <div class="voto-barra-cant">${info.votos}</div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    const badge = document.getElementById('cargoTotalBadge');
+    badge.style.display = '';
+    badge.innerHTML = `Total ${cargoInfo.nombre_corto}: <strong>${data.total_partidos.toLocaleString()}</strong> votos`;
+
+    document.getElementById('statBlanco').textContent = data.especiales['BLANCO'] || 0;
+    document.getElementById('statNulo').textContent = data.especiales['NULO'] || 0;
+    document.getElementById('statImpugnado').textContent = data.especiales['IMPUGNADO'] || 0;
+    document.getElementById('especialesCargoLabel').textContent = cargoInfo.nombre_corto;
+}
+
+function renderResumenCargos() {
+    if (!votosPorCargoData) return;
+    const row = document.getElementById('cargoSummaryRow');
+    row.innerHTML = CARGOS_DASH.map(cargo => {
+        const data = votosPorCargoData[cargo.id] || { total_general: 0 };
+        return `
+            <div class="cargo-summary-card">
+                <div class="cargo-summary-icon" style="background:${cargo.color}"><i class="fas fa-${cargo.icono}"></i></div>
+                <div class="cargo-summary-nombre">${cargo.nombre_corto}</div>
+                <div class="cargo-summary-valor">${data.total_general.toLocaleString()}</div>
+                <div class="cargo-summary-label">conteo independiente</div>
+            </div>
+        `;
+    }).join('');
+}
+
 function cargarVotos() {
-    fetch('/votos/api/votos-resumen')
+    fetch('/votos/api/votos-resumen-por-cargo')
         .then(r => r.json())
         .then(data => {
-            document.getElementById('statTotalVotos').textContent = data.total_general;
-
-            document.getElementById('statTotalVotos').textContent = data.total_general;
-
-            const entries = Object.entries(data.por_partido).sort((a, b) => b[1].votos - a[1].votos);
-
-            const maxVotos = Math.max(...entries.map(([, v]) => v.votos), 1);
-            const body = document.getElementById('votosPartidosBody');
-            if (!entries.length) {
-                body.innerHTML = '<div class="empty-state"><i class="fas fa-inbox"></i><p>Sin votos registrados</p></div>';
-            } else {
-                body.innerHTML = entries.map(([nombre, info]) => {
-                    const img = PARTIDOS_IMG[nombre] || '';
-                    const pct = Math.round((info.votos / maxVotos) * 100);
-                    return `
-                        <div class="voto-barra">
-                            <img src="/static/img/partidos/${img}" class="voto-barra-img" alt="${nombre}" onerror="this.style.display='none'">
-                            <div class="voto-barra-info">
-                                <div class="voto-barra-nombre">${info.sigla} — ${nombre}</div>
-                                <div class="voto-barra-track"><div class="voto-barra-fill" style="width:${pct}%"></div></div>
-                            </div>
-                            <div class="voto-barra-cant">${info.votos}</div>
-                        </div>
-                    `;
-                }).join('');
-            }
-
-            document.getElementById('statBlanco').textContent = data.especiales['BLANCO'] || 0;
-            document.getElementById('statNulo').textContent = data.especiales['NULO'] || 0;
-            document.getElementById('statImpugnado').textContent = data.especiales['IMPUGNADO'] || 0;
+            votosPorCargoData = data;
+            let totalGeneral = 0;
+            Object.values(data).forEach(c => { totalGeneral += c.total_general; });
+            document.getElementById('statTotalVotos').textContent = totalGeneral;
+            renderVotosCargo();
+            renderResumenCargos();
         });
 }
 

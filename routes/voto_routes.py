@@ -102,6 +102,7 @@ def api_mesas(colegio_id):
 def api_votos_resumen():
     colegio_id = request.args.get("colegio_id", type=int)
     mesa_id = request.args.get("mesa_id", type=int)
+    cargo_id = request.args.get("cargo", "").strip()
 
     query = Voto.query
     query_especial = VotoEspecial.query
@@ -112,6 +113,9 @@ def api_votos_resumen():
     if mesa_id:
         query = query.filter_by(mesa_id=mesa_id)
         query_especial = query_especial.filter_by(mesa_id=mesa_id)
+    if cargo_id:
+        query = query.filter_by(cargo=cargo_id)
+        query_especial = query_especial.filter_by(cargo=cargo_id)
 
     votos_por_partido = {}
     for v in query.all():
@@ -135,6 +139,55 @@ def api_votos_resumen():
         "total_especial": total_especial,
         "total_general": total_general,
     })
+
+
+@votos_bp.route("/api/votos-resumen-por-cargo")
+def api_votos_resumen_por_cargo():
+    """Totales de votos por cargo, para diferenciar Gobernador/Consejero/Provincia."""
+    colegio_id = request.args.get("colegio_id", type=int)
+    mesa_id = request.args.get("mesa_id", type=int)
+
+    resultado = {}
+    for cargo in CARGOS:
+        query = Voto.query.filter_by(cargo=cargo["id"])
+        query_especial = VotoEspecial.query.filter_by(cargo=cargo["id"])
+        if colegio_id:
+            query = query.filter_by(colegio_id=colegio_id)
+            query_especial = query_especial.filter_by(colegio_id=colegio_id)
+        if mesa_id:
+            query = query.filter_by(mesa_id=mesa_id)
+            query_especial = query_especial.filter_by(mesa_id=mesa_id)
+
+        votos_por_partido = {}
+        for v in query.all():
+            if v.partido_nombre not in votos_por_partido:
+                partido_info = next((p for p in PARTIDOS if p["id"] == v.partido_id), None)
+                votos_por_partido[v.partido_nombre] = {
+                    "sigla": v.partido_sigla,
+                    "votos": 0,
+                    "id": v.partido_id,
+                    "imagen": partido_info["imagen"] if partido_info else "",
+                }
+            votos_por_partido[v.partido_nombre]["votos"] += v.votos
+
+        votos_especiales = {}
+        total_especial = 0
+        for ve in query_especial.all():
+            votos_especiales[ve.tipo] = ve.cantidad
+            total_especial += ve.cantidad
+
+        total_partidos = sum(v["votos"] for v in votos_por_partido.values())
+
+        resultado[cargo["id"]] = {
+            "nombre": cargo["nombre"],
+            "por_partido": votos_por_partido,
+            "especiales": votos_especiales,
+            "total_partidos": total_partidos,
+            "total_especial": total_especial,
+            "total_general": total_partidos + total_especial,
+        }
+
+    return jsonify(resultado)
 
 
 @votos_bp.route("/api/exportar/excel")

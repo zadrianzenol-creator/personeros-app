@@ -66,6 +66,7 @@ CARGOS = [
     {
         "id": "regional",
         "nombre": "Gobernador y Vicegobernador Regional",
+        "nombre_corto": "Gobernador",
         "color": "#eab308",
         "color_bg": "rgba(234,179,8,0.12)",
         "color_border": "rgba(234,179,8,0.3)",
@@ -77,6 +78,7 @@ CARGOS = [
     {
         "id": "consejero",
         "nombre": "Consejero Regional - Provincia de Piura",
+        "nombre_corto": "Consejero",
         "color": "#16a34a",
         "color_bg": "rgba(22,163,74,0.12)",
         "color_border": "rgba(22,163,74,0.3)",
@@ -88,13 +90,13 @@ CARGOS = [
     {
         "id": "provincia",
         "nombre": "Provincia de Morropon",
+        "nombre_corto": "Provincial",
         "color": "#db2777",
         "color_bg": "rgba(219,39,119,0.12)",
         "color_border": "rgba(219,39,119,0.3)",
         "color_solido": "#f6d5f9",
         "imagen_folder": "partidos_provincia_icon",
         "icono": "city",
-        "tarjeta_completa": True,
         "partidos": _partidos_para("provincia"),
     },
 ]

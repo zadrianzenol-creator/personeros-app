@@ -61,7 +61,7 @@ def index():
 @login_required
 def dashboard():
     colegios = Colegio.query.filter_by(is_active=True).order_by(Colegio.nombre).all()
-    return render_template("dashboard.html", colegios=colegios)
+    return render_template("dashboard.html", colegios=colegios, cargos=CARGOS)
 
 
 @main_bp.route("/registrar", methods=["GET", "POST"])
