@@ -8,6 +8,15 @@
     -webkit-overflow-scrolling: touch;
 }
 
+/* Blindaje: ningun hijo de flex/grid empuja la pantalla mas ancha por texto
+   largo o campos que no se achican por debajo de su contenido. */
+.mobile-app * {
+    min-width: 0;
+}
+.mobile-app img, .mobile-app svg, .mobile-app table {
+    max-width: 100%;
+}
+
 /* MOBILE HEADER */
 .mobile-header {
     position: sticky;
@@ -315,16 +324,19 @@
     background: linear-gradient(135deg, #1e1b4b, #312e81);
     backdrop-filter: blur(20px);
     border-top: 1px solid rgba(255,255,255,0.08);
-    padding: 8px 16px;
+    padding: 8px 8px;
     padding-bottom: max(8px, env(safe-area-inset-bottom));
     display: flex;
     justify-content: space-around;
     z-index: 100;
     box-shadow: 0 -4px 20px rgba(0,0,0,0.15);
+    box-sizing: border-box;
 }
 
 .bottom-nav .nav-item {
     display: flex;
+    flex: 1;
+    min-width: 0;
     flex-direction: column;
     align-items: center;
     gap: 3px;
@@ -332,9 +344,10 @@
     color: rgba(255,255,255,0.45);
     font-size: 0.65rem;
     font-weight: 500;
-    padding: 6px 20px;
+    padding: 6px 8px;
     border-radius: 10px;
     transition: all 0.2s;
+    white-space: nowrap;
 }
 
 .bottom-nav .nav-item.active {

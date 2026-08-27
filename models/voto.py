@@ -24,12 +24,82 @@ PARTIDOS = [
     {"id": 20, "nombre": "Vision Peru", "sigla": "VP", "imagen": "vision_peru.png"},
 ]
 
-CARGOS = [
-    {"id": "regional", "nombre": "Gobernador y Vicegovernador Regional", "color": "#facc15", "color_bg": "rgba(250,204,21,0.12)", "color_border": "rgba(250,204,21,0.3)"},
-    {"id": "consejero", "nombre": "Consejero Regional - Provincia de Piura", "color": "#22c55e", "color_bg": "rgba(34,197,94,0.12)", "color_border": "rgba(34,197,94,0.3)"},
-    {"id": "provincia", "nombre": "Provincia de Piura", "color": "#ec4899", "color_bg": "rgba(236,72,153,0.12)", "color_border": "rgba(236,72,153,0.3)"},
-    {"id": "distrito", "nombre": "Distrito de Castilla", "color": "#06b6d4", "color_bg": "rgba(6,182,212,0.12)", "color_border": "rgba(6,182,212,0.3)"},
+_PARTIDOS_POR_ID = {p["id"]: p for p in PARTIDOS}
+
+# Orden y presencia de cada partido tal como aparece en la cedula de votacion
+# (columna Gobernador = todos; Consejero y Provincia solo incluyen los que
+# realmente figuran impresos en esa columna, en el mismo orden de la cedula).
+ORDEN_CEDULA = [
+    {"id": 3, "regional": True, "consejero": True, "provincia": True},    # Alianza para el Progreso
+    {"id": 19, "regional": True, "consejero": False, "provincia": False},  # Salvemos al Peru
+    {"id": 1, "regional": True, "consejero": True, "provincia": True},    # Accion Popular
+    {"id": 18, "regional": True, "consejero": False, "provincia": False},  # Renovacion Popular
+    {"id": 15, "regional": True, "consejero": True, "provincia": True},    # Partido Popular Cristiano
+    {"id": 20, "regional": True, "consejero": False, "provincia": True},  # Vision Peru
+    {"id": 4, "regional": True, "consejero": True, "provincia": False},   # Frente Popular Agricola
+    {"id": 6, "regional": True, "consejero": True, "provincia": True},    # Fuerza Popular
+    {"id": 10, "regional": True, "consejero": False, "provincia": False},  # Partido de los Trabajadores
+    {"id": 13, "regional": True, "consejero": True, "provincia": True},    # Partido Politico Peru Primero
+    {"id": 12, "regional": True, "consejero": True, "provincia": True},    # Partido Patriotico del Peru
+    {"id": 5, "regional": True, "consejero": False, "provincia": False},  # Fuerza Ciudadana
+    {"id": 11, "regional": True, "consejero": True, "provincia": False},   # Partido Pais para Todos
+    {"id": 17, "regional": True, "consejero": True, "provincia": True},    # Progresemos
+    {"id": 14, "regional": True, "consejero": False, "provincia": False},  # Pueblo Consciente
+    {"id": 9, "regional": True, "consejero": True, "provincia": True},    # Partido Democratico Somos Peru
+    {"id": 8, "regional": True, "consejero": False, "provincia": True},   # Partido Aprista Peruano
+    {"id": 16, "regional": True, "consejero": True, "provincia": True},    # Podemos Peru
+    {"id": 2, "regional": True, "consejero": True, "provincia": True},    # Alianza Electoral Venceremos
+    {"id": 7, "regional": True, "consejero": True, "provincia": True},    # Fuerza Regional
 ]
+
+
+def _partidos_para(clave):
+    partidos = []
+    for fila in ORDEN_CEDULA:
+        p = dict(_PARTIDOS_POR_ID[fila["id"]])
+        p["activo"] = fila[clave]
+        partidos.append(p)
+    return partidos
+
+
+CARGOS = [
+    {
+        "id": "regional",
+        "nombre": "Gobernador y Vicegobernador Regional",
+        "color": "#eab308",
+        "color_bg": "rgba(234,179,8,0.12)",
+        "color_border": "rgba(234,179,8,0.3)",
+        "color_solido": "#f5e011",
+        "imagen_folder": "partidos",
+        "icono": "landmark",
+        "partidos": _partidos_para("regional"),
+    },
+    {
+        "id": "consejero",
+        "nombre": "Consejero Regional - Provincia de Piura",
+        "color": "#16a34a",
+        "color_bg": "rgba(22,163,74,0.12)",
+        "color_border": "rgba(22,163,74,0.3)",
+        "color_solido": "#90fe2c",
+        "imagen_folder": "partidos_consejero_icon",
+        "icono": "chart-bar",
+        "partidos": _partidos_para("consejero"),
+    },
+    {
+        "id": "provincia",
+        "nombre": "Provincia de Morropon",
+        "color": "#db2777",
+        "color_bg": "rgba(219,39,119,0.12)",
+        "color_border": "rgba(219,39,119,0.3)",
+        "color_solido": "#f6d5f9",
+        "imagen_folder": "partidos_provincia_icon",
+        "icono": "city",
+        "tarjeta_completa": True,
+        "partidos": _partidos_para("provincia"),
+    },
+]
+
+_CARGOS_POR_ID = {c["id"]: c for c in CARGOS}
 
 
 class Voto(db.Model):

@@ -75,6 +75,51 @@
         </div>
 
         <div id="dniError" class="dni-error" style="display:none;"></div>
+
+        <div id="nuevoPersoneroForm" class="nuevo-personero-card" style="display:none;">
+            <div class="nuevo-personero-title">
+                <i class="fas fa-user-plus"></i> Esta mesa aun no tiene personero. Registrelo aqui.
+            </div>
+            <form method="POST" action="{{ url_for('main.registrar') }}" id="nuevoForm">
+                <input type="hidden" name="dni" id="nuevoDni">
+                <input type="hidden" name="nuevo" value="1">
+
+                <div class="form-field">
+                    <label>Nombre completo</label>
+                    <input type="text" name="nombre_completo" id="nuevoNombre" placeholder="Nombres y apellidos" required>
+                </div>
+                <div class="form-field">
+                    <label>Telefono</label>
+                    <input type="text" name="telefono" id="nuevoTelefono" placeholder="Numero de celular" inputmode="numeric" maxlength="9">
+                </div>
+                <div class="form-field">
+                    <label>Rol</label>
+                    <select name="rol" id="nuevoRol">
+                        <option value="Personero">Personero</option>
+                        <option value="Personero Alterno">Personero Alterno</option>
+                    </select>
+                </div>
+                <div class="form-field">
+                    <label>Colegio</label>
+                    <select id="nuevoColegio" onchange="cargarMesasLibres()" required>
+                        <option value="">Seleccione colegio...</option>
+                        {% for c in colegios %}
+                        <option value="{{ c.id }}">{{ c.nombre }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-field">
+                    <label>Mesa disponible</label>
+                    <select name="mesa_id" id="nuevoMesa" required>
+                        <option value="">Seleccione un colegio primero...</option>
+                    </select>
+                </div>
+
+                <button type="submit" class="btn btn-primary checkin-submit" id="nuevoSubmitBtn">
+                    <i class="fas fa-check-circle"></i> Registrar y Confirmar Asistencia
+                </button>
+            </form>
+        </div>
     </div>
 </div>
 
@@ -280,6 +325,48 @@
     align-items: center;
     gap: 10px;
 }
+.nuevo-personero-card {
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px dashed var(--border-color);
+    animation: fadeUp 0.4s ease;
+}
+.nuevo-personero-title {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.nuevo-personero-title i { color: var(--accent); }
+.form-field { margin-bottom: 14px; }
+.form-field label {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    margin-bottom: 6px;
+}
+.form-field input,
+.form-field select {
+    width: 100%;
+    padding: 12px 14px;
+    background: #f8fafc;
+    border: 2px solid var(--border-color);
+    border-radius: 12px;
+    font-size: 0.9rem;
+    font-family: inherit;
+    color: var(--text-primary);
+    outline: none;
+    transition: all 0.2s;
+}
+.form-field input:focus,
+.form-field select:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+}
 @media (max-width: 768px) {
     .checkin-container { padding: 10px 0; }
     .checkin-form-card { padding: 20px 16px; border-radius: 14px; }
@@ -303,11 +390,13 @@ function buscarPersonero() {
     const hint = document.getElementById('dniHint');
     const info = document.getElementById('personeroInfo');
     const error = document.getElementById('dniError');
+    const nuevoForm = document.getElementById('nuevoPersoneroForm');
 
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
     hint.textContent = 'Buscando...';
     info.style.display = 'none';
     error.style.display = 'none';
+    nuevoForm.style.display = 'none';
 
     fetch('/api/personero-dni/' + dni)
         .then(r => r.json())
@@ -326,9 +415,11 @@ function buscarPersonero() {
                 info.style.display = 'block';
                 hint.style.display = 'none';
             } else {
-                error.innerHTML = '<i class="fas fa-exclamation-circle"></i> El DNI <strong>' + dni + '</strong> no se encuentra registrado en el sistema.';
+                error.innerHTML = '<i class="fas fa-exclamation-circle"></i> El DNI <strong>' + dni + '</strong> no se encuentra registrado. Si esta mesa aun no tiene personero, complete el registro abajo.';
                 error.style.display = 'block';
                 hint.textContent = 'Presione Enter o toque el botón para buscar';
+                document.getElementById('nuevoDni').value = dni;
+                nuevoForm.style.display = 'block';
             }
         })
         .catch(err => {
@@ -338,5 +429,34 @@ function buscarPersonero() {
             hint.textContent = 'Presione Enter o toque el botón para buscar';
         });
 }
+
+function cargarMesasLibres() {
+    const colegioId = document.getElementById('nuevoColegio').value;
+    const selectMesa = document.getElementById('nuevoMesa');
+    selectMesa.innerHTML = '<option value="">Cargando...</option>';
+    if (!colegioId) {
+        selectMesa.innerHTML = '<option value="">Seleccione un colegio primero...</option>';
+        return;
+    }
+    fetch('/api/mesas-libres/' + colegioId)
+        .then(r => r.json())
+        .then(mesas => {
+            if (!mesas.length) {
+                selectMesa.innerHTML = '<option value="">Sin mesas disponibles en este colegio</option>';
+                return;
+            }
+            selectMesa.innerHTML = '<option value="">Seleccione mesa...</option>' +
+                mesas.map(m => '<option value="' + m.id + '">Mesa ' + m.numero + '</option>').join('');
+        })
+        .catch(() => {
+            selectMesa.innerHTML = '<option value="">Error al cargar mesas</option>';
+        });
+}
+
+document.getElementById('nuevoForm').addEventListener('submit', function() {
+    const btn = document.getElementById('nuevoSubmitBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Registrando...';
+});
 </script>
 {% endblock %}

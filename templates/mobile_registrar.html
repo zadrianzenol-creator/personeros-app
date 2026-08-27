@@ -119,6 +119,50 @@
         </div>
 
         <div id="dniError" class="mobile-dni-error" style="display:none;"></div>
+
+        <div id="nuevoPersoneroForm" class="mobile-nuevo-card" style="display:none;">
+            <div class="mobile-nuevo-title">
+                <i class="fas fa-user-plus"></i> Esta mesa aun no tiene personero. Registrelo aqui.
+            </div>
+            <form id="nuevoForm">
+                <input type="hidden" id="nuevoDni">
+
+                <div class="mobile-form-field">
+                    <label>Nombre completo</label>
+                    <input type="text" id="nuevoNombre" placeholder="Nombres y apellidos" required>
+                </div>
+                <div class="mobile-form-field">
+                    <label>Telefono</label>
+                    <input type="text" id="nuevoTelefono" placeholder="Numero de celular" inputmode="numeric" maxlength="9">
+                </div>
+                <div class="mobile-form-field">
+                    <label>Rol</label>
+                    <select id="nuevoRol">
+                        <option value="Personero">Personero</option>
+                        <option value="Personero Alterno">Personero Alterno</option>
+                    </select>
+                </div>
+                <div class="mobile-form-field">
+                    <label>Colegio</label>
+                    <select id="nuevoColegio" onchange="cargarMesasLibres()" required>
+                        <option value="">Seleccione colegio...</option>
+                        {% for c in colegios %}
+                        <option value="{{ c.id }}">{{ c.nombre }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="mobile-form-field">
+                    <label>Mesa disponible</label>
+                    <select id="nuevoMesa" required>
+                        <option value="">Seleccione un colegio primero...</option>
+                    </select>
+                </div>
+
+                <button type="submit" class="mobile-btn mobile-btn-primary" id="nuevoSubmitBtn">
+                    <i class="fas fa-check-circle"></i> Registrar y Confirmar Asistencia
+                </button>
+            </form>
+        </div>
     </div>
 
     <nav class="bottom-nav">
@@ -315,6 +359,48 @@
         align-items: center;
         gap: 10px;
     }
+    .mobile-nuevo-card {
+        margin-top: 18px;
+        padding-top: 18px;
+        border-top: 1px dashed var(--border-color);
+        animation: fadeUp 0.4s ease;
+    }
+    .mobile-nuevo-title {
+        font-size: 0.85rem;
+        font-weight: 700;
+        color: var(--text-primary);
+        margin-bottom: 16px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .mobile-nuevo-title i { color: var(--accent); }
+    .mobile-form-field { margin-bottom: 14px; }
+    .mobile-form-field label {
+        display: block;
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: var(--text-muted);
+        margin-bottom: 6px;
+    }
+    .mobile-form-field input,
+    .mobile-form-field select {
+        width: 100%;
+        padding: 12px 14px;
+        background: var(--bg-card);
+        border: 2px solid var(--border-color);
+        border-radius: 12px;
+        font-size: 0.9rem;
+        font-family: inherit;
+        color: var(--text-primary);
+        outline: none;
+        transition: all 0.2s;
+    }
+    .mobile-form-field input:focus,
+    .mobile-form-field select:focus {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.12);
+    }
     </style>
 
     <script>
@@ -330,11 +416,13 @@
         const hint = document.getElementById('dniHint');
         const info = document.getElementById('personeroInfo');
         const error = document.getElementById('dniError');
+        const nuevoForm = document.getElementById('nuevoPersoneroForm');
 
         btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
         hint.textContent = 'Buscando...';
         info.style.display = 'none';
         error.style.display = 'none';
+        nuevoForm.style.display = 'none';
 
         fetch('/api/personero-dni/' + dni)
             .then(r => r.json())
@@ -352,9 +440,11 @@
                     info.style.display = 'block';
                     hint.style.display = 'none';
                 } else {
-                    error.innerHTML = '<i class="fas fa-exclamation-circle"></i> DNI <strong>' + dni + '</strong> no registrado.';
+                    error.innerHTML = '<i class="fas fa-exclamation-circle"></i> DNI <strong>' + dni + '</strong> no registrado. Si esta mesa aun no tiene personero, complete el registro abajo.';
                     error.style.display = 'block';
                     hint.textContent = 'Presione Enter para buscar';
+                    document.getElementById('nuevoDni').value = dni;
+                    nuevoForm.style.display = 'block';
                 }
             })
             .catch(err => {
@@ -364,6 +454,69 @@
                 hint.textContent = 'Presione Enter para buscar';
             });
     }
+
+    function cargarMesasLibres() {
+        const colegioId = document.getElementById('nuevoColegio').value;
+        const selectMesa = document.getElementById('nuevoMesa');
+        selectMesa.innerHTML = '<option value="">Cargando...</option>';
+        if (!colegioId) {
+            selectMesa.innerHTML = '<option value="">Seleccione un colegio primero...</option>';
+            return;
+        }
+        fetch('/api/mesas-libres/' + colegioId)
+            .then(r => r.json())
+            .then(mesas => {
+                if (!mesas.length) {
+                    selectMesa.innerHTML = '<option value="">Sin mesas disponibles en este colegio</option>';
+                    return;
+                }
+                selectMesa.innerHTML = '<option value="">Seleccione mesa...</option>' +
+                    mesas.map(m => '<option value="' + m.id + '">Mesa ' + m.numero + '</option>').join('');
+            })
+            .catch(() => {
+                selectMesa.innerHTML = '<option value="">Error al cargar mesas</option>';
+            });
+    }
+
+    document.getElementById('nuevoForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const btn = document.getElementById('nuevoSubmitBtn');
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Registrando...';
+        btn.disabled = true;
+
+        const fd = new FormData();
+        fd.append('dni', document.getElementById('nuevoDni').value);
+        fd.append('nuevo', '1');
+        fd.append('nombre_completo', document.getElementById('nuevoNombre').value);
+        fd.append('telefono', document.getElementById('nuevoTelefono').value);
+        fd.append('rol', document.getElementById('nuevoRol').value);
+        fd.append('mesa_id', document.getElementById('nuevoMesa').value);
+
+        fetch('/registrar', { method: 'POST', body: fd })
+            .then(response => {
+                if (response.redirected) {
+                    window.location.href = response.url;
+                } else {
+                    return response.text();
+                }
+            })
+            .then(html => {
+                if (html) {
+                    const doc = new DOMParser().parseFromString(html, 'text/html');
+                    const alerts = doc.querySelectorAll('.alert');
+                    alerts.forEach(a => {
+                        showToast(a.textContent.trim(), 'error');
+                    });
+                }
+                btn.innerHTML = '<i class="fas fa-check-circle"></i> Registrar y Confirmar Asistencia';
+                btn.disabled = false;
+            })
+            .catch(() => {
+                btn.innerHTML = '<i class="fas fa-check-circle"></i> Registrar y Confirmar Asistencia';
+                btn.disabled = false;
+                showToast('Error de conexión', 'error');
+            });
+    });
 
     document.getElementById('checkinForm').addEventListener('submit', function(e) {
         e.preventDefault();

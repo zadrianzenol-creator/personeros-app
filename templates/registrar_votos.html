@@ -7,7 +7,7 @@
     <h2><i class="fas fa-ballot-check"></i> Registro de Votos</h2>
 
     <div class="form-section">
-        <div class="form-section-title"><i class="fas fa-school"></i> Seleccionar Mesa</div>
+        <div class="form-section-title"><i class="fas fa-school"></i> Seleccionar Mesa y Cargo</div>
         <div class="form-row">
             <div class="form-group">
                 <label>Colegio <span class="req">*</span></label>
@@ -24,27 +24,43 @@
                     <option value="">Seleccione mesa...</option>
                 </select>
             </div>
+            <div class="form-group">
+                <label>Cargo <span class="req">*</span></label>
+                <select id="selectCargo" onchange="cambiarCargo()" required>
+                    <option value="">Seleccione cargo...</option>
+                    {% for c in cargos %}
+                    <option value="{{ c.id }}">{{ c.nombre }}</option>
+                    {% endfor %}
+                </select>
+            </div>
         </div>
+        <p class="cargo-hint"><i class="fas fa-circle-info"></i> Los votos se guardan por separado para cada cargo. Si esta mesa tiene votos de varios cargos, registre uno, guarde, y vuelva a esta pagina para el siguiente.</p>
     </div>
 
     <form method="POST" id="formVotos">
         <input type="hidden" name="colegio_id" id="formColegioId">
         <input type="hidden" name="mesa_id" id="formMesaId">
+        <input type="hidden" name="cargo" id="formCargoId">
 
         <div class="form-section">
             <div class="form-section-title"><i class="fas fa-landmark"></i> Votos por Partido Politico</div>
-            <div class="partidos-grid">
-                {% for p in partidos %}
+            {% for cargo in cargos %}
+            <div class="partidos-grid cargo-partidos-section" data-cargo="{{ cargo.id }}" style="display:none">
+                {% for p in cargo.partidos %}
+                {% if p.activo %}
                 <div class="partido-card">
-                    <img src="{{ url_for('static', filename='img/partidos/' + p.imagen) }}" alt="{{ p.nombre }}" class="partido-img">
+                    <img src="{{ url_for('static', filename='img/' + cargo.imagen_folder + '/' + p.imagen) }}" alt="{{ p.nombre }}" class="partido-img">
                     <div class="partido-info">
                         <span class="partido-sigla">{{ p.sigla }}</span>
                         <span class="partido-nombre">{{ p.nombre }}</span>
                     </div>
-                    <input type="number" name="voto_{{ p.id }}" min="0" value="0" class="voto-input" data-partido="{{ p.id }}">
+                    <input type="number" name="voto_{{ p.id }}" min="0" value="0" class="voto-input" data-partido="{{ p.id }}" data-cargo="{{ cargo.id }}" disabled>
                 </div>
+                {% endif %}
                 {% endfor %}
             </div>
+            {% endfor %}
+            <p class="empty-state" id="sinCargoMsg"><i class="fas fa-arrow-up"></i><br>Seleccione un cargo para ver sus partidos</p>
         </div>
 
         <div class="form-section">
@@ -81,6 +97,15 @@
 </div>
 
 <style>
+.cargo-hint {
+    margin-top: 12px;
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.cargo-hint i { color: var(--accent); }
 .partidos-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
@@ -213,9 +238,28 @@ function cargarMesas() {
         });
 }
 
+function cambiarCargo() {
+    const cargoId = document.getElementById('selectCargo').value;
+    const sinCargoMsg = document.getElementById('sinCargoMsg');
+
+    document.querySelectorAll('.cargo-partidos-section').forEach(section => {
+        const esElegido = section.dataset.cargo === cargoId;
+        section.style.display = esElegido ? '' : 'none';
+        section.querySelectorAll('.voto-input').forEach(input => {
+            input.disabled = !esElegido;
+            if (!esElegido) input.value = 0;
+        });
+    });
+    document.querySelectorAll('.especial-input').forEach(i => { i.value = 0; });
+
+    sinCargoMsg.style.display = cargoId ? 'none' : '';
+    calcularTotales();
+}
+
 function calcularTotales() {
     let totalP = 0, totalE = 0;
-    document.querySelectorAll('.partido-card .voto-input').forEach(i => { totalP += parseInt(i.value) || 0; });
+    const cargoId = document.getElementById('selectCargo').value;
+    document.querySelectorAll('.cargo-partidos-section[data-cargo="' + cargoId + '"] .voto-input').forEach(i => { totalP += parseInt(i.value) || 0; });
     document.querySelectorAll('.especial-input').forEach(i => { totalE += parseInt(i.value) || 0; });
     document.getElementById('totalPartidos').textContent = totalP;
     document.getElementById('totalEspeciales').textContent = totalE;
@@ -229,9 +273,15 @@ document.querySelectorAll('.voto-input').forEach(i => {
 document.getElementById('formVotos').addEventListener('submit', function(e) {
     document.getElementById('formColegioId').value = document.getElementById('selectColegio').value;
     document.getElementById('formMesaId').value = document.getElementById('selectMesa').value;
+    document.getElementById('formCargoId').value = document.getElementById('selectCargo').value;
     if (!document.getElementById('formColegioId').value || !document.getElementById('formMesaId').value) {
         e.preventDefault();
         alert('Seleccione colegio y mesa primero.');
+        return;
+    }
+    if (!document.getElementById('formCargoId').value) {
+        e.preventDefault();
+        alert('Seleccione el cargo para el que va a registrar votos.');
     }
 });
 </script>

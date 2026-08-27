@@ -189,6 +189,7 @@
 .activity-dot.login { background: #8b5cf6; }
 .activity-dot.logout { background: #ef4444; }
 .activity-dot.busqueda { background: #94a3b8; }
+.activity-dot.error { background: #ef4444; }
 .activity-body { flex: 1; min-width: 0; }
 .activity-tipo {
     font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;
@@ -201,6 +202,7 @@
 .activity-tipo.login { color: #8b5cf6; }
 .activity-tipo.logout { color: #ef4444; }
 .activity-tipo.busqueda { color: #94a3b8; }
+.activity-tipo.error { color: #ef4444; }
 .activity-text { font-size: 0.8rem; color: var(--text-secondary); }
 .activity-text strong { color: var(--text-primary); }
 .activity-footer { font-size: 0.68rem; color: var(--text-muted); margin-top: 3px; display: flex; gap: 12px; }
@@ -261,6 +263,7 @@
 <script>
 const TIPO_LABELS = {
     'CHECK_IN': 'Check-in',
+    'REINGRESO': 'Reingreso',
     'VOTOS_GUARDADOS': 'Votos Guardados',
     'ACCESO_VOTOS': 'Acceso Votos',
     'CAMBIO_ESTADO': 'Cambio Estado',
@@ -268,10 +271,12 @@ const TIPO_LABELS = {
     'LOGOUT': 'Logout Admin',
     'BUSQUEDA_DNI': 'Busqueda DNI',
     'VOTOS_REGISTRADOS_ADMIN': 'Votos Admin',
+    'ERROR_500': 'Error del Sistema',
 };
 
 const TIPO_DOT = {
     'CHECK_IN': 'check-in',
+    'REINGRESO': 'check-in',
     'VOTOS_GUARDADOS': 'votos',
     'ACCESO_VOTOS': 'acceso',
     'CAMBIO_ESTADO': 'estado',
@@ -279,6 +284,7 @@ const TIPO_DOT = {
     'LOGOUT': 'logout',
     'BUSQUEDA_DNI': 'busqueda',
     'VOTOS_REGISTRADOS_ADMIN': 'votos',
+    'ERROR_500': 'error',
 };
 
 let currentActividadPage = 1;

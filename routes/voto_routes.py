@@ -16,17 +16,28 @@ def registrar_votos():
     if request.method == "POST":
         colegio_id = request.form.get("colegio_id", type=int)
         mesa_id = request.form.get("mesa_id", type=int)
+        cargo_id = request.form.get("cargo", "").strip()
+        cargo_info = next((c for c in CARGOS if c["id"] == cargo_id), None)
 
         if not colegio_id or not mesa_id:
             flash("Seleccione colegio y mesa.", "error")
             return redirect(url_for("votos.registrar_votos"))
 
-        for partido in PARTIDOS:
-            key = f"voto_{partido['id']}"
+        if not cargo_info:
+            flash("Seleccione el cargo para el que va a registrar votos.", "error")
+            return redirect(url_for("votos.registrar_votos"))
+
+        partidos_permitidos = {p["id"]: p for p in cargo_info["partidos"] if p["activo"]}
+
+        for partido_id, partido in partidos_permitidos.items():
+            key = f"voto_{partido_id}"
             valor = request.form.get(key, 0, type=int)
+            if valor is None or valor < 0:
+                flash("Los votos deben ser numeros no negativos.", "error")
+                return redirect(url_for("votos.registrar_votos"))
             if valor > 0:
                 existing = Voto.query.filter_by(
-                    mesa_id=mesa_id, partido_id=partido["id"]
+                    mesa_id=mesa_id, partido_id=partido_id, cargo=cargo_id,
                 ).first()
                 if existing:
                     existing.votos = valor
@@ -34,9 +45,10 @@ def registrar_votos():
                     db.session.add(Voto(
                         mesa_id=mesa_id,
                         colegio_id=colegio_id,
-                        partido_id=partido["id"],
+                        partido_id=partido_id,
                         partido_nombre=partido["nombre"],
                         partido_sigla=partido["sigla"],
+                        cargo=cargo_id,
                         votos=valor,
                         registrado_por=current_user.id,
                     ))
@@ -45,34 +57,37 @@ def registrar_votos():
         for tipo in tipos_especiales:
             key = f"voto_{tipo.lower()}"
             valor = request.form.get(key, 0, type=int)
-            if valor >= 0:
-                existing = VotoEspecial.query.filter_by(
-                    mesa_id=mesa_id, tipo=tipo
-                ).first()
-                if existing:
-                    existing.cantidad = valor
-                else:
-                    db.session.add(VotoEspecial(
-                        mesa_id=mesa_id,
-                        colegio_id=colegio_id,
-                        tipo=tipo,
-                        cantidad=valor,
-                        registrado_por=current_user.id,
-                    ))
+            if valor is None or valor < 0:
+                flash("Los votos especiales deben ser numeros no negativos.", "error")
+                return redirect(url_for("votos.registrar_votos"))
+            existing = VotoEspecial.query.filter_by(
+                mesa_id=mesa_id, cargo=cargo_id, tipo=tipo,
+            ).first()
+            if existing:
+                existing.cantidad = valor
+            else:
+                db.session.add(VotoEspecial(
+                    mesa_id=mesa_id,
+                    colegio_id=colegio_id,
+                    cargo=cargo_id,
+                    tipo=tipo,
+                    cantidad=valor,
+                    registrado_por=current_user.id,
+                ))
 
         entry = ActivityLog(
             user_id=current_user.id,
             tipo="VOTOS_REGISTRADOS_ADMIN",
-            detalle=f"Registro manual de votos - Mesa {mesa_id}",
+            detalle=f"Registro manual de votos de {cargo_info['nombre']} - Mesa {mesa_id}",
             ip_address=request.remote_addr,
             user_agent=request.headers.get("User-Agent", "")[:300],
         )
         db.session.add(entry)
         db.session.commit()
-        flash("Votos registrados exitosamente.", "success")
+        flash(f"Votos de {cargo_info['nombre']} registrados exitosamente.", "success")
         return redirect(url_for("votos.registrar_votos"))
 
-    return render_template("registrar_votos.html", colegios=colegios, partidos=PARTIDOS)
+    return render_template("registrar_votos.html", colegios=colegios, cargos=CARGOS)
 
 
 @votos_bp.route("/api/mesas/<int:colegio_id>")

@@ -3,73 +3,79 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="theme-color" content="#0a0a0f">
+    <meta name="theme-color" content="#e4e4e7">
     <title>Conteo de Votos</title>
+    <link rel="icon" type="image/svg+xml" href="/static/img/favicon.svg">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
         *{margin:0;padding:0;box-sizing:border-box}
-        body{font-family:'Inter',sans-serif;background:#0a0a0f;color:#fff;min-height:100vh;overflow-x:hidden}
-        .header{position:sticky;top:0;z-index:100;background:rgba(10,10,15,0.95);backdrop-filter:blur(20px);border-bottom:1px solid rgba(255,255,255,0.06);padding:14px 20px;display:flex;align-items:center;gap:14px}
+        body{font-family:'Inter',sans-serif;background:#e4e4e7;color:#18181b;min-height:100vh;overflow-x:hidden}
+        .header{position:sticky;top:0;z-index:100;background:rgba(255,255,255,0.95);backdrop-filter:blur(20px);border-bottom:1px solid rgba(0,0,0,0.08);padding:14px 20px;display:flex;align-items:center;gap:14px;box-shadow:0 1px 4px rgba(0,0,0,0.04)}
         .header-avatar{width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,#6366f1,#8b5cf6);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:0.9rem;color:#fff;flex-shrink:0}
         .header-info{flex:1;min-width:0}
-        .header-name{font-size:0.95rem;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-        .header-detail{font-size:0.75rem;color:rgba(255,255,255,0.4)}
-        .progress-bar{display:flex;gap:4px;padding:10px 20px;background:rgba(255,255,255,0.02);border-bottom:1px solid rgba(255,255,255,0.04)}
-        .progress-step{flex:1;height:5px;border-radius:3px;background:rgba(255,255,255,0.06);transition:background 0.3s}
+        .header-name{font-size:0.95rem;font-weight:700;color:#18181b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+        .header-detail{font-size:0.75rem;color:#71717a}
+        .progress-bar{display:flex;gap:4px;padding:10px 20px;background:rgba(255,255,255,0.6);border-bottom:1px solid rgba(0,0,0,0.06)}
+        .progress-step{flex:1;height:5px;border-radius:3px;background:rgba(0,0,0,0.1);transition:background 0.3s}
         .progress-step.done{background:#10b981}
         .progress-step.active{background:#6366f1;animation:pulseP 1.5s infinite}
         @keyframes pulseP{0%,100%{opacity:1}50%{opacity:0.5}}
         .section{display:none;padding:20px}
         .section.active{display:block;animation:fadeIn 0.4s ease}
         @keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
-        .section-banner{border-radius:16px;padding:20px;margin-bottom:20px;text-align:center}
-        .section-banner h2{font-size:1.1rem;font-weight:800}
-        .section-banner p{font-size:0.8rem;opacity:0.7;margin-top:4px}
-        .party-list{display:flex;flex-direction:column;gap:8px}
-        .party-row{display:flex;align-items:center;gap:12px;padding:12px 14px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:12px;transition:all 0.2s}
-        .party-row:focus-within{border-color:rgba(99,102,241,0.4);background:rgba(99,102,241,0.05)}
-        .party-logo{width:38px;height:38px;border-radius:10px;object-fit:contain;background:rgba(255,255,255,0.05);flex-shrink:0}
+        .section-banner{border-radius:16px;padding:18px 20px;margin-bottom:20px;text-align:center;background:#f4f4f5;border:1px solid rgba(0,0,0,0.08)}
+        .section-banner h2{font-size:1.1rem;font-weight:800;color:#18181b}
+        .section-banner p{font-size:0.8rem;color:#52525b;margin-top:4px}
+        .ballot-card{border-radius:10px;overflow:hidden;border:2px solid rgba(0,0,0,0.5);background:var(--cargo-solido)}
+        .ballot-header{background:#3f3f3f;color:#fff;font-weight:800;font-size:0.72rem;text-transform:uppercase;letter-spacing:0.3px;text-align:center;padding:10px 12px}
+        .party-list{display:flex;flex-direction:column}
+        .party-row{display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid rgba(0,0,0,0.25)}
+        .party-row:last-child{border-bottom:none}
         .party-info{flex:1;min-width:0}
-        .party-name{font-size:0.78rem;font-weight:600;color:rgba(255,255,255,0.85);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-        .party-sigla{font-size:0.68rem;color:rgba(255,255,255,0.35)}
-        .party-input{width:72px;padding:10px 8px;background:rgba(255,255,255,0.06);border:2px solid rgba(255,255,255,0.08);border-radius:10px;font-size:1rem;font-weight:700;font-family:inherit;color:#fff;text-align:center;outline:none;transition:all 0.2s}
-        .party-input:focus{border-color:rgba(99,102,241,0.5);background:rgba(99,102,241,0.1)}
+        .party-name{font-size:0.74rem;font-weight:800;color:#111827;text-transform:uppercase;line-height:1.2}
+        .party-sigla{font-size:0.62rem;color:#374151;font-weight:600;margin-top:2px}
+        .party-logo-badge{width:50px;height:50px;flex-shrink:0;background:#fff;border-radius:9px;box-shadow:0 1px 4px rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;padding:4px}
+        .party-logo{width:100%;height:100%;object-fit:contain}
+        .party-input{width:48px;flex-shrink:0;padding:9px 4px;background:rgba(255,255,255,0.55);border:2px solid rgba(0,0,0,0.3);border-radius:8px;font-size:0.9rem;font-weight:700;font-family:inherit;color:#111827;text-align:center;outline:none;transition:all 0.2s}
+        .party-input:focus{border-color:#6366f1;background:#fff}
         .party-input::-webkit-outer-spin-button,.party-input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
         .party-input[type=number]{-moz-appearance:textfield}
-        .especiales-section{margin-top:20px;padding-top:16px;border-top:1px solid rgba(255,255,255,0.06)}
-        .especiales-title{font-size:0.72rem;font-weight:700;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px}
+        .party-row-blank{padding:10px 12px 10px 0}
+        .party-row-blank .party-logo-badge{margin-left:auto;box-shadow:0 1px 4px rgba(0,0,0,0.25);background:rgba(255,255,255,0.55)}
+        .especiales-section{margin-top:20px;padding-top:16px;border-top:1px solid rgba(0,0,0,0.08)}
+        .especiales-title{font-size:0.72rem;font-weight:700;color:#71717a;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px}
         .especiales-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
-        .especial-card{padding:14px;text-align:center;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:12px}
+        .especial-card{padding:14px;text-align:center;background:#fff;border:1px solid rgba(0,0,0,0.08);border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,0.04)}
         .especial-card .eicon{font-size:1.3rem;margin-bottom:6px}
-        .especial-card .elabel{font-size:0.72rem;color:rgba(255,255,255,0.5)}
-        .especial-card input{width:60px;padding:8px 6px;margin-top:6px;background:rgba(255,255,255,0.06);border:2px solid rgba(255,255,255,0.08);border-radius:10px;font-size:1rem;font-weight:700;font-family:inherit;color:#fff;text-align:center;outline:none}
+        .especial-card .elabel{font-size:0.72rem;color:#52525b;font-weight:600}
+        .especial-card input{width:60px;padding:8px 6px;margin-top:6px;background:#f4f4f5;border:2px solid rgba(0,0,0,0.1);border-radius:10px;font-size:1rem;font-weight:700;font-family:inherit;color:#18181b;text-align:center;outline:none}
         .especial-card input:focus{border-color:rgba(99,102,241,0.5)}
         .especial-card input::-webkit-outer-spin-button,.especial-card input::-webkit-inner-spin-button{-webkit-appearance:none}
-        .nav-buttons{display:flex;gap:12px;padding:20px;border-top:1px solid rgba(255,255,255,0.06);background:rgba(10,10,15,0.95);position:sticky;bottom:0}
+        .nav-buttons{display:flex;gap:12px;padding:20px;border-top:1px solid rgba(0,0,0,0.08);background:rgba(255,255,255,0.95);position:sticky;bottom:0}
         .nav-btn{flex:1;padding:14px;border:none;border-radius:12px;font-size:0.9rem;font-weight:700;font-family:inherit;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:all 0.2s}
-        .nav-btn-back{background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.6);border:1px solid rgba(255,255,255,0.1)}
+        .nav-btn-back{background:#f4f4f5;color:#52525b;border:1px solid rgba(0,0,0,0.1)}
         .nav-btn-next{color:#fff;background:linear-gradient(135deg,#6366f1,#8b5cf6)}
         .nav-btn-submit{background:linear-gradient(135deg,#10b981,#34d399);color:#fff}
         .nav-btn:hover{transform:translateY(-1px)}
         .total-badge{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:20px;font-size:0.78rem;font-weight:700;margin-top:10px}
-        .success-overlay{display:none;position:fixed;inset:0;z-index:200;background:rgba(10,10,15,0.95);backdrop-filter:blur(20px);flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:40px}
+        .success-overlay{display:none;position:fixed;inset:0;z-index:200;background:rgba(244,244,245,0.98);backdrop-filter:blur(20px);flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:40px}
         .success-overlay.show{display:flex}
         .success-icon-big{width:80px;height:80px;border-radius:24px;background:linear-gradient(135deg,#10b981,#34d399);display:flex;align-items:center;justify-content:center;font-size:2rem;color:#fff;margin-bottom:24px;box-shadow:0 16px 48px rgba(16,185,129,0.3)}
-        .success-overlay h2{font-size:1.4rem;font-weight:800;margin-bottom:8px}
-        .success-overlay p{font-size:0.9rem;color:rgba(255,255,255,0.5);margin-bottom:30px}
-        .resumen-card{width:100%;max-width:400px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:20px;margin-bottom:20px;text-align:left}
-        .resumen-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.04)}
+        .success-overlay h2{font-size:1.4rem;font-weight:800;margin-bottom:8px;color:#18181b}
+        .success-overlay p{font-size:0.9rem;color:#52525b;margin-bottom:30px}
+        .resumen-card{width:100%;max-width:400px;background:#fff;border:1px solid rgba(0,0,0,0.08);border-radius:16px;padding:20px;margin-bottom:20px;text-align:left;box-shadow:0 1px 4px rgba(0,0,0,0.05)}
+        .resumen-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(0,0,0,0.06)}
         .resumen-row:last-child{border-bottom:none}
-        .resumen-label{font-size:0.82rem;color:rgba(255,255,255,0.5)}
+        .resumen-label{font-size:0.82rem;color:#52525b}
         .resumen-valor{font-size:0.95rem;font-weight:700}
-        .toast-msg{position:fixed;top:20px;left:50%;transform:translateX(-50%);padding:12px 24px;border-radius:12px;font-size:0.85rem;font-weight:600;z-index:300;animation:slideDown 0.3s ease}
-        .toast-msg.success{background:rgba(16,185,129,0.15);border:1px solid rgba(16,185,129,0.3);color:#6ee7b7}
-        .toast-msg.error{background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.3);color:#fca5a5}
+        .toast-msg{position:fixed;top:20px;left:50%;transform:translateX(-50%);padding:12px 24px;border-radius:12px;font-size:0.85rem;font-weight:600;z-index:300;animation:slideDown 0.3s ease;box-shadow:0 4px 16px rgba(0,0,0,0.12)}
+        .toast-msg.success{background:#dcfce7;border:1px solid #86efac;color:#166534}
+        .toast-msg.error{background:#fee2e2;border:1px solid #fca5a5;color:#991b1b}
         @keyframes slideDown{from{opacity:0;transform:translateX(-50%) translateY(-20px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
-        @media(max-width:600px){.party-row{padding:10px;gap:10px}.party-logo{width:34px;height:34px}.party-name{font-size:0.72rem}.party-input{width:60px;padding:8px 6px;font-size:0.9rem}.especiales-grid{grid-template-columns:1fr}.section-banner{padding:16px}.section-banner h2{font-size:0.95rem}.header-avatar{width:44px;height:44px;font-size:1rem}.especial-card .eicon{font-size:1.4rem}}
+        @media(max-width:600px){.party-row{padding:8px 8px;gap:8px}.party-logo-badge{width:42px;height:42px}.party-name{font-size:0.66rem}.party-sigla{font-size:0.58rem}.party-input{width:38px;padding:7px 2px;font-size:0.82rem}.ballot-header{font-size:0.62rem;padding:8px 10px}.especiales-grid{grid-template-columns:1fr}.section-banner{padding:16px}.section-banner h2{font-size:0.95rem}.header-avatar{width:44px;height:44px;font-size:1rem}.especial-card .eicon{font-size:1.4rem}}
     </style>
 </head>
 <body>
@@ -90,30 +96,42 @@
 </div>
 {% for cargo in cargos %}
 <div class="section {% if loop.first %}active{% endif %}" id="section-{{ cargo.id }}" data-cargo="{{ cargo.id }}">
-    <div class="section-banner" style="background:{{ cargo.color_bg }};border:1px solid {{ cargo.color_border }}">
-        <h2 style="color:{{ cargo.color }}"><i class="fas fa-{{ 'landmark' if cargo.id == 'regional' else 'chart-bar' if cargo.id == 'consejero' else 'city' if cargo.id == 'provincial' else 'location-dot' }}"></i> {{ cargo.nombre }}</h2>
-        <p style="color:{{ cargo.color }}">Ingrese los votos de cada partido</p>
+    <div class="section-banner" style="border-left:5px solid {{ cargo.color }}">
+        <h2 style="color:{{ cargo.color }}"><i class="fas fa-{{ cargo.icono }}"></i> {{ cargo.nombre }}</h2>
+        <p>Ingrese los votos de cada partido</p>
         <div class="total-badge" style="background:{{ cargo.color_bg }};border:1px solid {{ cargo.color_border }};color:{{ cargo.color }}">
             <i class="fas fa-calculator"></i> Total: <span class="cargo-total" id="total-{{ cargo.id }}">0</span>
         </div>
     </div>
-    <div class="party-list">
-        {% for p in partidos %}
-        <div class="party-row">
-            <img src="/static/img/partidos/{{ p.imagen }}" class="party-logo" alt="{{ p.nombre }}" onerror="this.style.display='none'">
-            <div class="party-info">
-                <div class="party-name">{{ p.nombre }}</div>
-                <div class="party-sigla">{{ p.sigla }}</div>
+    <div class="ballot-card" style="--cargo-solido:{{ cargo.color_solido }}">
+        <div class="ballot-header">{{ cargo.nombre|upper }}</div>
+        <div class="party-list">
+            {% for p in cargo.partidos %}
+            {% if p.activo %}
+            <div class="party-row">
+                <div class="party-info">
+                    <div class="party-name">{{ p.nombre }}</div>
+                    <div class="party-sigla">{{ p.sigla }}</div>
+                </div>
+                <div class="party-logo-badge">
+                    <img src="/static/img/{{ cargo.imagen_folder }}/{{ p.imagen }}" class="party-logo" alt="{{ p.nombre }}" onerror="this.style.display='none'">
+                </div>
+                <input type="number" class="party-input" data-cargo="{{ cargo.id }}" data-party="{{ p.id }}" min="0" max="99999" value="0" inputmode="numeric">
             </div>
-            <input type="number" class="party-input" data-cargo="{{ cargo.id }}" data-party="{{ p.id }}" min="0" max="99999" value="0" inputmode="numeric">
+            {% else %}
+            <div class="party-row party-row-blank">
+                <div class="party-info"></div>
+                <div class="party-logo-badge"></div>
+            </div>
+            {% endif %}
+            {% endfor %}
         </div>
-        {% endfor %}
     </div>
     <div class="especiales-section">
         <div class="especiales-title">Votos Especiales</div>
         <div class="especiales-grid">
             <div class="especial-card">
-                <div class="eicon"><i class="fas fa-file-circle-xmark" style="color:rgba(255,255,255,0.4)"></i></div>
+                <div class="eicon"><i class="fas fa-file-circle-xmark" style="color:#a1a1aa"></i></div>
                 <div class="elabel">Blanco</div>
                 <input type="number" data-cargo="{{ cargo.id }}" data-especial="BLANCO" min="0" max="99999" value="0" inputmode="numeric">
             </div>

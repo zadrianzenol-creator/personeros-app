@@ -1,6 +1,7 @@
 import os
 import json
-from flask import Flask, render_template, jsonify
+import traceback
+from flask import Flask, render_template, jsonify, request
 from flask_login import LoginManager
 from config import Config
 from database import db, init_db
@@ -43,6 +44,20 @@ def create_app():
 
     @app.errorhandler(500)
     def server_error(e):
+        try:
+            from database import db
+            from models.activity import ActivityLog
+            entry = ActivityLog(
+                tipo="ERROR_500",
+                detalle=f"{request.method} {request.path} - {e}"[:2000],
+                ip_address=request.remote_addr,
+                user_agent=request.headers.get("User-Agent", "")[:300],
+            )
+            db.session.add(entry)
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+        app.logger.error("Error 500 en %s %s:\n%s", request.method, request.path, traceback.format_exc())
         return render_template("errors/500.html"), 500
 
     return app
@@ -136,7 +151,12 @@ with app.app_context():
 
     with db.engine.connect() as conn:
         try:
-            conn.execute(db.text("ALTER TABLE personeros ADD COLUMN IF NOT EXISTS last_active TIMESTAMP"))
+            if db.engine.dialect.name == "sqlite":
+                cols = [row[1] for row in conn.execute(db.text("PRAGMA table_info(personeros)"))]
+                if "last_active" not in cols:
+                    conn.execute(db.text("ALTER TABLE personeros ADD COLUMN last_active TIMESTAMP"))
+            else:
+                conn.execute(db.text("ALTER TABLE personeros ADD COLUMN IF NOT EXISTS last_active TIMESTAMP"))
             conn.commit()
         except Exception:
             pass
