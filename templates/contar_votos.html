@@ -64,8 +64,9 @@
         .success-overlay{display:none;position:fixed;inset:0;z-index:200;background:rgba(244,244,245,0.98);backdrop-filter:blur(20px);flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:40px}
         .success-overlay.show{display:flex}
         .success-icon-big{width:80px;height:80px;border-radius:24px;background:linear-gradient(135deg,#10b981,#34d399);display:flex;align-items:center;justify-content:center;font-size:2rem;color:#fff;margin-bottom:24px;box-shadow:0 16px 48px rgba(16,185,129,0.3)}
-        .success-overlay h2{font-size:1.4rem;font-weight:800;margin-bottom:8px;color:#18181b}
-        .success-overlay p{font-size:0.9rem;color:#52525b;margin-bottom:30px}
+        .success-overlay h2{font-size:1.4rem;font-weight:800;margin-bottom:8px;color:#18181b;width:100%;max-width:420px}
+        .success-overlay p{font-size:0.9rem;color:#52525b;margin-bottom:30px;width:100%;max-width:420px}
+        .success-overlay .nav-btn{flex:0 0 auto;width:100%}
         .resumen-card{width:100%;max-width:400px;background:#fff;border:1px solid rgba(0,0,0,0.08);border-radius:16px;padding:20px;margin-bottom:20px;text-align:left;box-shadow:0 1px 4px rgba(0,0,0,0.05)}
         .resumen-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(0,0,0,0.06)}
         .resumen-row:last-child{border-bottom:none}
@@ -79,6 +80,20 @@
     </style>
 </head>
 <body>
+{% if ya_finalizado %}
+<div class="success-overlay show" style="position:static;min-height:100vh;background:#e4e4e7">
+    <div class="success-icon-big" style="background:linear-gradient(135deg,#6366f1,#8b5cf6)"><i class="fas fa-lock"></i></div>
+    <h2>Proceso Finalizado</h2>
+    <p>
+        {{ personero.nombre_completo }}, ya enviaste los votos de la Mesa {{ personero.numero_mesa }}
+        {% if personero.votos_finalizados_at %}el {{ personero.votos_finalizados_at.strftime('%d/%m/%Y a las %H:%M') }}{% endif %}.
+        Tu proceso como personero ha terminado y no se puede volver a ingresar.
+    </p>
+    <a href="/" class="nav-btn nav-btn-next" style="max-width:300px;text-decoration:none;padding:14px 24px">
+        <i class="fas fa-home"></i> Volver al Inicio
+    </a>
+</div>
+{% else %}
 <div class="header">
     <div class="header-avatar"><i class="fas fa-check-to-slot" style="font-size:1.1rem"></i></div>
     <div class="header-info">
@@ -160,7 +175,7 @@
 <div class="success-overlay" id="successOverlay">
     <div class="success-icon-big"><i class="fas fa-check"></i></div>
     <h2>Votos Enviados</h2>
-    <p>Los conteos de todos los cargos han sido registrados exitosamente.</p>
+    <p>Los conteos de todos los cargos han sido registrados exitosamente. Tu proceso como personero ha finalizado.</p>
     <div class="resumen-card" id="resumenCard"></div>
     <a href="/" class="nav-btn nav-btn-next" style="max-width:300px;text-decoration:none;padding:14px 24px">
         <i class="fas fa-home"></i> Volver al Inicio
@@ -249,15 +264,29 @@ function showSection(index) {
 
 function nextSection() {
     var cargoId = CARGOS[currentSection].id;
+    var esUltimo = currentSection === totalSections - 1;
+
+    if (esUltimo) {
+        var confirmado = confirm('¿Estás seguro de enviar los votos?\n\nUna vez enviados, no vas a poder volver a ingresar ni modificarlos. Esto termina tu proceso como personero.');
+        if (!confirmado) return;
+    }
+
     saveSection(cargoId, function() {
         completedSections[currentSection] = true;
-        if (currentSection < totalSections - 1) {
+        if (!esUltimo) {
             currentSection++;
             showSection(currentSection);
         } else {
-            showSuccess();
+            finalizarProceso();
         }
     });
+}
+
+function finalizarProceso() {
+    fetch('/api/finalizar-votos/' + PERSONERO_ID, { method: 'POST' })
+        .then(function(r) { return r.json(); })
+        .then(function() { showSuccess(); })
+        .catch(function() { showSuccess(); });
 }
 
 function prevSection() {
@@ -330,5 +359,6 @@ document.querySelectorAll('.party-input, .especial-card input').forEach(function
 showSection(0);
 loadExistingVotes();
 </script>
+{% endif %}
 </body>
 </html>

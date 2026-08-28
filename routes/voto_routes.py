@@ -27,6 +27,23 @@ def registrar_votos():
             flash("Seleccione el cargo para el que va a registrar votos.", "error")
             return redirect(url_for("votos.registrar_votos"))
 
+        mesa = Mesa.query.get(mesa_id)
+        if not mesa:
+            flash("La mesa seleccionada no es valida.", "error")
+            return redirect(url_for("votos.registrar_votos"))
+
+        ya_registrado = (
+            Voto.query.filter_by(mesa_id=mesa_id, cargo=cargo_id).first()
+            or VotoEspecial.query.filter_by(mesa_id=mesa_id, cargo=cargo_id).first()
+        )
+        if ya_registrado:
+            flash(
+                f"Los votos de {cargo_info['nombre']} para la Mesa {mesa.numero} ya fueron "
+                "registrados anteriormente. No se puede volver a registrar la misma mesa y cargo.",
+                "error",
+            )
+            return redirect(url_for("votos.registrar_votos"))
+
         partidos_permitidos = {p["id"]: p for p in cargo_info["partidos"] if p["activo"]}
 
         for partido_id, partido in partidos_permitidos.items():
@@ -88,6 +105,25 @@ def registrar_votos():
         return redirect(url_for("votos.registrar_votos"))
 
     return render_template("registrar_votos.html", colegios=colegios, cargos=CARGOS)
+
+
+@votos_bp.route("/api/votos-existen")
+@login_required
+def api_votos_existen():
+    mesa_id = request.args.get("mesa_id", type=int)
+    cargo_id = request.args.get("cargo", "").strip()
+
+    if not mesa_id or not cargo_id:
+        return jsonify({"registrado": False})
+
+    voto = Voto.query.filter_by(mesa_id=mesa_id, cargo=cargo_id).first()
+    especial = VotoEspecial.query.filter_by(mesa_id=mesa_id, cargo=cargo_id).first()
+    registro = voto or especial
+
+    return jsonify({
+        "registrado": registro is not None,
+        "fecha": registro.fecha_registro.strftime("%d/%m/%Y %H:%M") if registro else None,
+    })
 
 
 @votos_bp.route("/api/mesas/<int:colegio_id>")

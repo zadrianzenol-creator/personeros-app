@@ -151,12 +151,19 @@ with app.app_context():
 
     with db.engine.connect() as conn:
         try:
+            columnas_nuevas = [
+                ("last_active", "TIMESTAMP"),
+                ("votos_finalizados", "BOOLEAN DEFAULT FALSE NOT NULL"),
+                ("votos_finalizados_at", "TIMESTAMP"),
+            ]
             if db.engine.dialect.name == "sqlite":
                 cols = [row[1] for row in conn.execute(db.text("PRAGMA table_info(personeros)"))]
-                if "last_active" not in cols:
-                    conn.execute(db.text("ALTER TABLE personeros ADD COLUMN last_active TIMESTAMP"))
+                for nombre, tipo in columnas_nuevas:
+                    if nombre not in cols:
+                        conn.execute(db.text(f"ALTER TABLE personeros ADD COLUMN {nombre} {tipo}"))
             else:
-                conn.execute(db.text("ALTER TABLE personeros ADD COLUMN IF NOT EXISTS last_active TIMESTAMP"))
+                for nombre, tipo in columnas_nuevas:
+                    conn.execute(db.text(f"ALTER TABLE personeros ADD COLUMN IF NOT EXISTS {nombre} {tipo}"))
             conn.commit()
         except Exception:
             pass

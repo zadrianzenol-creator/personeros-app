@@ -75,6 +75,8 @@ class Personero(db.Model):
     hora_llegada = db.Column(db.String(10), nullable=True)
     ip_address = db.Column(db.String(45), nullable=True)
     last_active = db.Column(db.DateTime, nullable=True)
+    votos_finalizados = db.Column(db.Boolean, nullable=False, default=False)
+    votos_finalizados_at = db.Column(db.DateTime, nullable=True)
 
     def __repr__(self):
         return f"<Personero {self.dni} - {self.nombre_completo}>"
@@ -96,4 +98,5 @@ class Personero(db.Model):
             "hora_llegada": self.hora_llegada or "",
             "ip_address": self.ip_address,
             "last_active": self.last_active.strftime("%d/%m/%Y %H:%M:%S") if self.last_active else "",
+            "votos_finalizados": self.votos_finalizados,
         }

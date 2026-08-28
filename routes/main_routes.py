@@ -82,6 +82,16 @@ def registrar():
 
         if personero:
             now = peru_now()
+
+            if personero.votos_finalizados:
+                flash(
+                    f"{personero.nombre_completo} ya envio sus votos el "
+                    f"{personero.votos_finalizados_at.strftime('%d/%m/%Y a las %H:%M') if personero.votos_finalizados_at else ''}. "
+                    "Su proceso ha finalizado y no se puede volver a ingresar.",
+                    "error",
+                )
+                return render_template(template, colegios=colegios)
+
             if personero.estado == "PRESENTE":
                 personero.ip_address = request.remote_addr
                 personero.last_active = now
@@ -175,6 +185,15 @@ def api_personero_dni(dni):
 @main_bp.route("/c/<int:personero_id>")
 def contar_votos(personero_id):
     personero = Personero.query.get_or_404(personero_id)
+
+    if personero.votos_finalizados:
+        return render_template(
+            "contar_votos.html",
+            personero=personero,
+            cargos=CARGOS,
+            ya_finalizado=True,
+        )
+
     if personero.estado != "PRESENTE":
         personero.estado = "PRESENTE"
 
@@ -187,7 +206,30 @@ def contar_votos(personero_id):
         "contar_votos.html",
         personero=personero,
         cargos=CARGOS,
+        ya_finalizado=False,
     )
+
+
+@main_bp.route("/api/finalizar-votos/<int:personero_id>", methods=["POST"])
+def api_finalizar_votos(personero_id):
+    personero = Personero.query.get_or_404(personero_id)
+
+    if personero.votos_finalizados:
+        return jsonify({"ok": True, "message": "Los votos ya habian sido enviados anteriormente."})
+
+    now = peru_now()
+    personero.votos_finalizados = True
+    personero.votos_finalizados_at = now
+    personero.last_active = now
+    log_activity(
+        "VOTOS_FINALIZADOS",
+        f"Envio final de votos - Mesa {personero.numero_mesa}",
+        personero_id=personero.id,
+        request_obj=request,
+    )
+    db.session.commit()
+
+    return jsonify({"ok": True, "message": "Votos enviados y proceso finalizado."})
 
 
 def _votos_no_negativo(valor, maximo=99999):
@@ -204,6 +246,10 @@ def _votos_no_negativo(valor, maximo=99999):
 @main_bp.route("/api/guardar-votos/<int:personero_id>", methods=["POST"])
 def api_guardar_votos(personero_id):
     personero = Personero.query.get_or_404(personero_id)
+
+    if personero.votos_finalizados:
+        return jsonify({"error": "Ya enviaste tus votos. El proceso esta finalizado y no se puede modificar."}), 403
+
     data = request.get_json(silent=True)
 
     if not data or "cargo" not in data or "votos" not in data:
