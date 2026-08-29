@@ -27,7 +27,7 @@
         </div>
 
         <nav class="sidebar-nav">
-            {% if current_user.is_authenticated %}
+            {% if current_user.is_authenticated and current_user.role == 'admin' %}
             <a href="{{ url_for('main.registrar') }}" class="nav-item {% if request.endpoint in ['main.registrar', 'main.panel_personero'] %}active{% endif %}">
                 <div class="nav-icon"><i class="fas fa-user-plus"></i></div>
                 <span>Registrar Personero</span>
@@ -53,6 +53,43 @@
                 <div class="nav-icon" style="background:rgba(239,68,68,0.15);color:#fca5a5;"><i class="fas fa-file-pdf"></i></div>
                 <span>Exportar PDF</span>
             </a>
+            <div style="height:1px;background:rgba(255,255,255,0.08);margin:8px 14px;"></div>
+            <a href="{{ url_for('auth.usuarios') }}" class="nav-item {% if request.endpoint in ['auth.usuarios', 'auth.toggle_usuario'] %}active{% endif %}">
+                <div class="nav-icon" style="background:rgba(148,163,184,0.15);color:#cbd5e1;"><i class="fas fa-users-gear"></i></div>
+                <span>Usuarios</span>
+            </a>
+            {% elif current_user.is_authenticated and current_user.role == 'digitador' %}
+            <div class="nav-section-label">Registro Electoral</div>
+            <a href="{{ url_for('votos.registrar_votos') }}" class="nav-item active">
+                <div class="nav-icon"><i class="fas fa-check-to-slot"></i></div>
+                <span>Registrar Votos</span>
+            </a>
+
+            <div class="nav-divider-restricted"><i class="fas fa-lock"></i> Acceso Restringido</div>
+
+            <div class="nav-section-label">Control de Asistencia</div>
+            <div class="nav-item nav-item-locked">
+                <div class="nav-icon"><i class="fas fa-user-plus"></i></div>
+                <span>Registrar Personero</span>
+            </div>
+
+            <div class="nav-section-label">Monitoreo y Reportes</div>
+            <div class="nav-item nav-item-locked">
+                <div class="nav-icon"><i class="fas fa-chart-pie"></i></div>
+                <span>Dashboard</span>
+            </div>
+            <div class="nav-item nav-item-locked">
+                <div class="nav-icon"><i class="fas fa-satellite-dish"></i></div>
+                <span>Monitoreo</span>
+            </div>
+            <div class="nav-item nav-item-locked">
+                <div class="nav-icon" style="background:rgba(16,185,129,0.15);color:#6ee7b7;"><i class="fas fa-file-excel"></i></div>
+                <span>Exportar Excel</span>
+            </div>
+            <div class="nav-item nav-item-locked">
+                <div class="nav-icon" style="background:rgba(239,68,68,0.15);color:#fca5a5;"><i class="fas fa-file-pdf"></i></div>
+                <span>Exportar PDF</span>
+            </div>
             {% else %}
             <div class="nav-section-label">Control de Asistencia</div>
             <a href="{{ url_for('main.registrar') }}" class="nav-item {% if request.endpoint in ['main.registrar', 'main.panel_personero'] %}active{% endif %}">

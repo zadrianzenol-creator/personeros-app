@@ -20,7 +20,7 @@
             </div>
             <div class="form-group">
                 <label>Mesa <span class="req">*</span></label>
-                <select id="selectMesa" onchange="verificarVotosExistentes()" required>
+                <select id="selectMesa" onchange="mostrarPersoneroMesa(); verificarVotosExistentes();" required>
                     <option value="">Seleccione mesa...</option>
                 </select>
             </div>
@@ -34,7 +34,14 @@
                 </select>
             </div>
         </div>
-        <p class="cargo-hint"><i class="fas fa-circle-info"></i> Los votos se guardan por separado para cada cargo. Si esta mesa tiene votos de varios cargos, registre uno, guarde, y vuelva a esta pagina para el siguiente.</p>
+        <p class="cargo-hint"><i class="fas fa-circle-info"></i> Solo se listan colegios y mesas con personero de modalidad "Asistido por digitador". Los votos se guardan por separado para cada cargo. Si esta mesa tiene votos de varios cargos, registre uno, guarde, y vuelva a esta pagina para el siguiente.</p>
+        <div class="personero-mesa-box" id="personeroMesaBox" style="display:none;">
+            <i class="fas fa-user"></i>
+            <div>
+                <span class="personero-mesa-label">Personero de esta mesa</span>
+                <span class="personero-mesa-nombre" id="personeroMesaNombre">—</span>
+            </div>
+        </div>
         <div class="ya-registrado-warning" id="yaRegistradoWarning" style="display:none;">
             <i class="fas fa-triangle-exclamation"></i>
             <span id="yaRegistradoTexto"></span>
@@ -110,6 +117,36 @@
     gap: 8px;
 }
 .cargo-hint i { color: var(--accent); }
+.personero-mesa-box {
+    margin-top: 12px;
+    padding: 12px 16px;
+    background: rgba(99,102,241,0.08);
+    border: 1px solid rgba(99,102,241,0.3);
+    border-radius: 12px;
+    align-items: center;
+    gap: 12px;
+}
+.personero-mesa-box i {
+    font-size: 1.1rem;
+    color: var(--accent-light);
+    flex-shrink: 0;
+}
+.personero-mesa-box div {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+.personero-mesa-label {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+.personero-mesa-nombre {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
 .ya-registrado-warning {
     margin-top: 12px;
     padding: 12px 16px;
@@ -240,20 +277,43 @@
 </style>
 
 <script>
+let mesasCargadas = [];
+
 function cargarMesas() {
     const colegioId = document.getElementById('selectColegio').value;
     const selectMesa = document.getElementById('selectMesa');
     selectMesa.innerHTML = '<option value="">Cargando...</option>';
     ocultarAvisoRegistrado();
+    ocultarPersoneroMesa();
+    mesasCargadas = [];
     if (!colegioId) { selectMesa.innerHTML = '<option value="">Seleccione mesa...</option>'; return; }
     fetch('/votos/api/mesas/' + colegioId)
         .then(r => r.json())
         .then(mesas => {
+            mesasCargadas = mesas;
             selectMesa.innerHTML = '<option value="">Seleccione mesa...</option>';
             mesas.forEach(m => {
                 selectMesa.innerHTML += `<option value="${m.id}">Mesa ${m.numero}</option>`;
             });
+            if (mesas.length === 0) {
+                selectMesa.innerHTML = '<option value="">Sin mesas asistidas por digitador</option>';
+            }
         });
+}
+
+function ocultarPersoneroMesa() {
+    document.getElementById('personeroMesaBox').style.display = 'none';
+    document.getElementById('personeroMesaNombre').textContent = '—';
+}
+
+function mostrarPersoneroMesa() {
+    const mesaId = document.getElementById('selectMesa').value;
+    if (!mesaId) { ocultarPersoneroMesa(); return; }
+    const mesa = mesasCargadas.find(m => String(m.id) === String(mesaId));
+    if (!mesa || !mesa.personero_nombre) { ocultarPersoneroMesa(); return; }
+    document.getElementById('personeroMesaNombre').textContent =
+        mesa.personero_nombre + (mesa.personero_dni ? ' (DNI ' + mesa.personero_dni + ')' : '');
+    document.getElementById('personeroMesaBox').style.display = 'flex';
 }
 
 let mesaYaRegistrada = false;

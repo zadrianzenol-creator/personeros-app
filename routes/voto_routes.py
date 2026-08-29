@@ -8,10 +8,32 @@ from models.activity import ActivityLog
 votos_bp = Blueprint("votos", __name__)
 
 
+def _colegios_con_digitador():
+    """Colegios que tienen al menos una mesa asistida por digitador."""
+    colegio_ids = {
+        row[0] for row in
+        db.session.query(Colegio.id)
+        .join(Personero, Personero.colegio_id == Colegio.id)
+        .filter(Personero.modalidad_reporte == "ASISTIDO_DIGITADOR")
+        .distinct()
+        .all()
+    }
+    return (
+        Colegio.query.filter(Colegio.is_active == True, Colegio.id.in_(colegio_ids))
+        .order_by(Colegio.nombre)
+        .all()
+    )
+
+
 @votos_bp.route("/registrar-votos", methods=["GET", "POST"])
 @login_required
 def registrar_votos():
-    colegios = Colegio.query.filter_by(is_active=True).order_by(Colegio.nombre).all()
+    es_digitador = current_user.role == "digitador"
+    colegios = (
+        _colegios_con_digitador()
+        if es_digitador
+        else Colegio.query.filter_by(is_active=True).order_by(Colegio.nombre).all()
+    )
 
     if request.method == "POST":
         colegio_id = request.form.get("colegio_id", type=int)
@@ -31,6 +53,16 @@ def registrar_votos():
         if not mesa:
             flash("La mesa seleccionada no es valida.", "error")
             return redirect(url_for("votos.registrar_votos"))
+
+        if es_digitador:
+            personero_mesa = Personero.query.filter_by(mesa_id=mesa_id).first()
+            if personero_mesa and personero_mesa.modalidad_reporte != "ASISTIDO_DIGITADOR":
+                flash(
+                    f"La Mesa {mesa.numero} tiene un personero con modalidad directo al sistema. "
+                    "El registro de votos de esa mesa lo hace el propio personero, no el digitador.",
+                    "error",
+                )
+                return redirect(url_for("votos.registrar_votos"))
 
         ya_registrado = (
             Voto.query.filter_by(mesa_id=mesa_id, cargo=cargo_id).first()
@@ -129,8 +161,20 @@ def api_votos_existen():
 @votos_bp.route("/api/mesas/<int:colegio_id>")
 @login_required
 def api_mesas(colegio_id):
-    mesas = Mesa.query.filter_by(colegio_id=colegio_id, is_active=True).order_by(Mesa.numero).all()
-    return jsonify([m.to_dict() for m in mesas])
+    query = Mesa.query.filter_by(colegio_id=colegio_id, is_active=True)
+    if current_user.role == "digitador":
+        query = query.join(Personero, Personero.mesa_id == Mesa.id).filter(
+            Personero.modalidad_reporte == "ASISTIDO_DIGITADOR"
+        )
+    mesas = query.order_by(Mesa.numero).all()
+    resultado = []
+    for m in mesas:
+        personero = Personero.query.filter_by(mesa_id=m.id).first()
+        data = m.to_dict()
+        data["personero_nombre"] = personero.nombre_completo if personero else None
+        data["personero_dni"] = personero.dni if personero else None
+        resultado.append(data)
+    return jsonify(resultado)
 
 
 @votos_bp.route("/api/votos-resumen")

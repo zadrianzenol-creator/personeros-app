@@ -1,8 +1,8 @@
 import os
 import json
 import traceback
-from flask import Flask, render_template, jsonify, request
-from flask_login import LoginManager
+from flask import Flask, render_template, jsonify, request, redirect, url_for
+from flask_login import LoginManager, current_user
 from config import Config
 from database import db, init_db
 from models.user import User
@@ -29,6 +29,21 @@ def create_app():
     app.register_blueprint(auth_bp)
     app.register_blueprint(main_bp)
     app.register_blueprint(votos_bp, url_prefix="/votos")
+
+    ENDPOINTS_PERMITIDOS_DIGITADOR = {
+        "votos.registrar_votos",
+        "votos.api_mesas",
+        "votos.api_votos_existen",
+        "auth.logout",
+        "static",
+    }
+
+    @app.before_request
+    def restringir_acceso_digitador():
+        if current_user.is_authenticated and current_user.role == "digitador":
+            endpoint = request.endpoint
+            if endpoint and endpoint not in ENDPOINTS_PERMITIDOS_DIGITADOR:
+                return redirect(url_for("votos.registrar_votos"))
 
     @app.route("/ping")
     def ping():
@@ -165,6 +180,29 @@ with app.app_context():
             else:
                 for nombre, tipo in columnas_nuevas:
                     conn.execute(db.text(f"ALTER TABLE personeros ADD COLUMN IF NOT EXISTS {nombre} {tipo}"))
+            conn.commit()
+        except Exception:
+            pass
+        try:
+            # DNIs cargados en el padron con modalidad de reporte ASISTIDO_DIGITADOR
+            # (el resto queda con el valor por defecto DIRECTO_SISTEMA). Se reaplica
+            # en cada arranque para que el dato llegue a cualquier base de datos
+            # donde se despliegue el sistema, sin depender de un script manual.
+            dnis_asistido_digitador = [
+                "60811039", "74352600", "70585798", "40665454", "42187975",
+                "03309298", "70840025", "03372755", "70853935", "03377866",
+                "03312670", "03304653", "40224194", "73462909", "74592169",
+                "73323943", "42059550", "03313238", "41401543", "70792656",
+                "74896317", "70792640", "76181142", "80277714", "03853912",
+                "42414980", "76636517", "45238202", "03311581", "73017017",
+                "75470138", "74624224", "74249273", "74504398", "71509942",
+                "61303442", "75219165", "03372976", "80444738",
+            ]
+            for dni in dnis_asistido_digitador:
+                conn.execute(
+                    db.text("UPDATE personeros SET modalidad_reporte='ASISTIDO_DIGITADOR' WHERE dni=:dni"),
+                    {"dni": dni},
+                )
             conn.commit()
         except Exception:
             pass
