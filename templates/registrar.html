@@ -76,9 +76,10 @@
 
         <div id="dniError" class="dni-error" style="display:none;"></div>
 
+        {% if es_admin %}
         <div id="nuevoPersoneroForm" class="nuevo-personero-card" style="display:none;">
             <div class="nuevo-personero-title">
-                <i class="fas fa-user-plus"></i> Esta mesa aun no tiene personero. Registrelo aqui.
+                <i class="fas fa-user-plus"></i> Esta mesa aun no tiene personero. Registrelo aqui (solo administrador).
             </div>
             <form method="POST" action="{{ url_for('main.registrar') }}" id="nuevoForm">
                 <input type="hidden" name="dni" id="nuevoDni">
@@ -97,6 +98,13 @@
                     <select name="rol" id="nuevoRol">
                         <option value="Personero">Personero</option>
                         <option value="Personero Alterno">Personero Alterno</option>
+                    </select>
+                </div>
+                <div class="form-field">
+                    <label>Modalidad de reporte</label>
+                    <select name="modalidad_reporte" id="nuevoModalidad">
+                        <option value="DIRECTO_SISTEMA">Directo al sistema</option>
+                        <option value="ASISTIDO_DIGITADOR">Asistido por digitador</option>
                     </select>
                 </div>
                 <div class="form-field">
@@ -120,6 +128,7 @@
                 </button>
             </form>
         </div>
+        {% endif %}
     </div>
 </div>
 
@@ -376,6 +385,7 @@
 </style>
 
 <script>
+const ES_ADMIN = {{ 'true' if es_admin else 'false' }};
 let foundPersonero = null;
 
 document.getElementById('dniInput').addEventListener('keydown', function(e) {
@@ -396,7 +406,7 @@ function buscarPersonero() {
     hint.textContent = 'Buscando...';
     info.style.display = 'none';
     error.style.display = 'none';
-    nuevoForm.style.display = 'none';
+    if (nuevoForm) nuevoForm.style.display = 'none';
 
     fetch('/api/personero-dni/' + dni)
         .then(r => r.json())
@@ -414,12 +424,16 @@ function buscarPersonero() {
                 document.getElementById('submitDni').value = data.dni;
                 info.style.display = 'block';
                 hint.style.display = 'none';
-            } else {
+            } else if (ES_ADMIN) {
                 error.innerHTML = '<i class="fas fa-exclamation-circle"></i> El DNI <strong>' + dni + '</strong> no se encuentra registrado. Si esta mesa aun no tiene personero, complete el registro abajo.';
                 error.style.display = 'block';
                 hint.textContent = 'Presione Enter o toque el botón para buscar';
                 document.getElementById('nuevoDni').value = dni;
                 nuevoForm.style.display = 'block';
+            } else {
+                error.innerHTML = '<i class="fas fa-exclamation-circle"></i> DNI no registrado. Comuníquese con el administrador o coordinador para verificar su asignación.';
+                error.style.display = 'block';
+                hint.textContent = 'Presione Enter o toque el botón para buscar';
             }
         })
         .catch(err => {
@@ -453,10 +467,13 @@ function cargarMesasLibres() {
         });
 }
 
-document.getElementById('nuevoForm').addEventListener('submit', function() {
-    const btn = document.getElementById('nuevoSubmitBtn');
-    btn.disabled = true;
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Registrando...';
-});
+const nuevoFormEl = document.getElementById('nuevoForm');
+if (nuevoFormEl) {
+    nuevoFormEl.addEventListener('submit', function() {
+        const btn = document.getElementById('nuevoSubmitBtn');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Registrando...';
+    });
+}
 </script>
 {% endblock %}

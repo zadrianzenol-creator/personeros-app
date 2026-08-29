@@ -155,6 +155,7 @@ with app.app_context():
                 ("last_active", "TIMESTAMP"),
                 ("votos_finalizados", "BOOLEAN DEFAULT FALSE NOT NULL"),
                 ("votos_finalizados_at", "TIMESTAMP"),
+                ("modalidad_reporte", "VARCHAR(30) DEFAULT 'DIRECTO_SISTEMA' NOT NULL"),
             ]
             if db.engine.dialect.name == "sqlite":
                 cols = [row[1] for row in conn.execute(db.text("PRAGMA table_info(personeros)"))]

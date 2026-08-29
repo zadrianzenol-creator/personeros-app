@@ -120,9 +120,10 @@
 
         <div id="dniError" class="mobile-dni-error" style="display:none;"></div>
 
+        {% if es_admin %}
         <div id="nuevoPersoneroForm" class="mobile-nuevo-card" style="display:none;">
             <div class="mobile-nuevo-title">
-                <i class="fas fa-user-plus"></i> Esta mesa aun no tiene personero. Registrelo aqui.
+                <i class="fas fa-user-plus"></i> Esta mesa aun no tiene personero. Registrelo aqui (solo administrador).
             </div>
             <form id="nuevoForm">
                 <input type="hidden" id="nuevoDni">
@@ -140,6 +141,13 @@
                     <select id="nuevoRol">
                         <option value="Personero">Personero</option>
                         <option value="Personero Alterno">Personero Alterno</option>
+                    </select>
+                </div>
+                <div class="mobile-form-field">
+                    <label>Modalidad de reporte</label>
+                    <select id="nuevoModalidad">
+                        <option value="DIRECTO_SISTEMA">Directo al sistema</option>
+                        <option value="ASISTIDO_DIGITADOR">Asistido por digitador</option>
                     </select>
                 </div>
                 <div class="mobile-form-field">
@@ -163,6 +171,7 @@
                 </button>
             </form>
         </div>
+        {% endif %}
     </div>
 
     <nav class="bottom-nav">
@@ -404,6 +413,8 @@
     </style>
 
     <script>
+    const ES_ADMIN = {{ 'true' if es_admin else 'false' }};
+
     document.getElementById('dniInput').addEventListener('keydown', function(e) {
         if (e.key === 'Enter') { e.preventDefault(); buscarPersonero(); }
     });
@@ -422,7 +433,7 @@
         hint.textContent = 'Buscando...';
         info.style.display = 'none';
         error.style.display = 'none';
-        nuevoForm.style.display = 'none';
+        if (nuevoForm) nuevoForm.style.display = 'none';
 
         fetch('/api/personero-dni/' + dni)
             .then(r => r.json())
@@ -439,12 +450,16 @@
                     document.getElementById('submitDni').value = data.dni;
                     info.style.display = 'block';
                     hint.style.display = 'none';
-                } else {
+                } else if (ES_ADMIN) {
                     error.innerHTML = '<i class="fas fa-exclamation-circle"></i> DNI <strong>' + dni + '</strong> no registrado. Si esta mesa aun no tiene personero, complete el registro abajo.';
                     error.style.display = 'block';
                     hint.textContent = 'Presione Enter para buscar';
                     document.getElementById('nuevoDni').value = dni;
                     nuevoForm.style.display = 'block';
+                } else {
+                    error.innerHTML = '<i class="fas fa-exclamation-circle"></i> DNI no registrado. Comuníquese con el administrador o coordinador para verificar su asignación.';
+                    error.style.display = 'block';
+                    hint.textContent = 'Presione Enter para buscar';
                 }
             })
             .catch(err => {
@@ -478,45 +493,49 @@
             });
     }
 
-    document.getElementById('nuevoForm').addEventListener('submit', function(e) {
-        e.preventDefault();
-        const btn = document.getElementById('nuevoSubmitBtn');
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Registrando...';
-        btn.disabled = true;
+    const nuevoFormEl = document.getElementById('nuevoForm');
+    if (nuevoFormEl) {
+        nuevoFormEl.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const btn = document.getElementById('nuevoSubmitBtn');
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Registrando...';
+            btn.disabled = true;
 
-        const fd = new FormData();
-        fd.append('dni', document.getElementById('nuevoDni').value);
-        fd.append('nuevo', '1');
-        fd.append('nombre_completo', document.getElementById('nuevoNombre').value);
-        fd.append('telefono', document.getElementById('nuevoTelefono').value);
-        fd.append('rol', document.getElementById('nuevoRol').value);
-        fd.append('mesa_id', document.getElementById('nuevoMesa').value);
+            const fd = new FormData();
+            fd.append('dni', document.getElementById('nuevoDni').value);
+            fd.append('nuevo', '1');
+            fd.append('nombre_completo', document.getElementById('nuevoNombre').value);
+            fd.append('telefono', document.getElementById('nuevoTelefono').value);
+            fd.append('rol', document.getElementById('nuevoRol').value);
+            fd.append('modalidad_reporte', document.getElementById('nuevoModalidad').value);
+            fd.append('mesa_id', document.getElementById('nuevoMesa').value);
 
-        fetch('/registrar', { method: 'POST', body: fd })
-            .then(response => {
-                if (response.redirected) {
-                    window.location.href = response.url;
-                } else {
-                    return response.text();
-                }
-            })
-            .then(html => {
-                if (html) {
-                    const doc = new DOMParser().parseFromString(html, 'text/html');
-                    const alerts = doc.querySelectorAll('.alert');
-                    alerts.forEach(a => {
-                        showToast(a.textContent.trim(), 'error');
-                    });
-                }
-                btn.innerHTML = '<i class="fas fa-check-circle"></i> Registrar y Confirmar Asistencia';
-                btn.disabled = false;
-            })
-            .catch(() => {
-                btn.innerHTML = '<i class="fas fa-check-circle"></i> Registrar y Confirmar Asistencia';
-                btn.disabled = false;
-                showToast('Error de conexión', 'error');
-            });
-    });
+            fetch('/registrar', { method: 'POST', body: fd })
+                .then(response => {
+                    if (response.redirected) {
+                        window.location.href = response.url;
+                    } else {
+                        return response.text();
+                    }
+                })
+                .then(html => {
+                    if (html) {
+                        const doc = new DOMParser().parseFromString(html, 'text/html');
+                        const alerts = doc.querySelectorAll('.alert');
+                        alerts.forEach(a => {
+                            showToast(a.textContent.trim(), 'error');
+                        });
+                    }
+                    btn.innerHTML = '<i class="fas fa-check-circle"></i> Registrar y Confirmar Asistencia';
+                    btn.disabled = false;
+                })
+                .catch(() => {
+                    btn.innerHTML = '<i class="fas fa-check-circle"></i> Registrar y Confirmar Asistencia';
+                    btn.disabled = false;
+                    showToast('Error de conexión', 'error');
+                });
+        });
+    }
 
     document.getElementById('checkinForm').addEventListener('submit', function(e) {
         e.preventDefault();

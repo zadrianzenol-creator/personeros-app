@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+{% block title %}Panel del Personero{% endblock %}
+{% block page_title %}Panel del Personero{% endblock %}
+
+{% block content %}
+<div class="panel-personero-container">
+    <div class="pp-hero">
+        <div class="pp-hero-avatar">{{ personero.nombre_completo[:1].upper() }}</div>
+        <div class="pp-hero-info">
+            <h2>{{ personero.nombre_completo }}</h2>
+            <p>DNI: {{ personero.dni }} &mdash; {{ personero.colegio.nombre if personero.colegio else '' }} &mdash; Mesa {{ personero.numero_mesa }}</p>
+        </div>
+    </div>
+
+    <div class="pp-notice">
+        <div class="pp-notice-icon"><i class="fas fa-shield-halved"></i></div>
+        <p>Por seguridad, el registro de asistencia y el registro de votos funcionan como procesos independientes. El acceso al registro de votos requiere autorización.</p>
+    </div>
+
+    <div class="pp-cards">
+        <div class="pp-card">
+            <div class="pp-card-icon operativo"><i class="fas fa-user-check"></i></div>
+            <h3>Asistencia</h3>
+            <span class="pp-status operativo"><i class="fas fa-circle-check"></i> Acceso operativo</span>
+            {% if personero.estado == 'PRESENTE' %}
+            <p class="pp-card-detail">
+                Confirmada{% if personero.fecha_registro %} el {{ personero.fecha_registro.strftime('%d/%m/%Y') }}{% endif %}{% if personero.hora_llegada %} a las {{ personero.hora_llegada }}{% endif %}.
+            </p>
+            {% else %}
+            <p class="pp-card-detail">Estado actual: {{ personero.estado }}.</p>
+            {% endif %}
+        </div>
+
+        <div class="pp-card">
+            {% if personero.votos_finalizados %}
+            <div class="pp-card-icon completado"><i class="fas fa-check-double"></i></div>
+            <h3>Registro de Votos</h3>
+            <span class="pp-status completado"><i class="fas fa-circle-check"></i> Completado</span>
+            <p class="pp-card-detail">
+                Enviaste tus votos{% if personero.votos_finalizados_at %} el {{ personero.votos_finalizados_at.strftime('%d/%m/%Y a las %H:%M') }}{% endif %}. Tu proceso ha finalizado.
+            </p>
+            {% elif personero.modalidad_reporte == 'DIRECTO_SISTEMA' %}
+            <div class="pp-card-icon operativo"><i class="fas fa-check-to-slot"></i></div>
+            <h3>Registro de Votos</h3>
+            <span class="pp-status operativo"><i class="fas fa-circle-check"></i> Acceso operativo</span>
+            <p class="pp-card-detail">Se usa al finalizar el escrutinio de tu mesa.</p>
+            <a href="{{ url_for('main.contar_votos', personero_id=personero.id) }}" class="btn btn-primary pp-card-btn">
+                <i class="fas fa-arrow-right"></i> Ir a Registro de Votos
+            </a>
+            {% else %}
+            <div class="pp-card-icon restringido"><i class="fas fa-lock"></i></div>
+            <h3>Registro de Votos</h3>
+            <span class="pp-status restringido"><i class="fas fa-lock"></i> Acceso restringido</span>
+            <p class="pp-card-detail">Tus votos seran registrados por un digitador de la central a partir del acta de tu mesa.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+.panel-personero-container { max-width: 720px; margin: 0 auto; }
+.pp-hero {
+    display: flex; align-items: center; gap: 16px;
+    background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius);
+    padding: 20px 24px; margin-bottom: 20px;
+}
+.pp-hero-avatar {
+    width: 52px; height: 52px; border-radius: 14px; flex-shrink: 0;
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.3rem; font-weight: 800; color: #fff;
+}
+.pp-hero-info h2 { font-size: 1.1rem; font-weight: 800; color: var(--text-primary); }
+.pp-hero-info p { font-size: 0.82rem; color: var(--text-muted); margin-top: 2px; }
+.pp-notice {
+    display: flex; align-items: flex-start; gap: 14px;
+    background: #eff6ff; border: 1px solid #bfdbfe; border-radius: var(--radius);
+    padding: 18px 20px; margin-bottom: 24px;
+}
+.pp-notice-icon {
+    width: 38px; height: 38px; border-radius: 10px; flex-shrink: 0;
+    background: #dbeafe; color: #2563eb;
+    display: flex; align-items: center; justify-content: center; font-size: 1rem;
+}
+.pp-notice p { font-size: 0.85rem; color: #1e40af; line-height: 1.5; }
+.pp-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.pp-card {
+    background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius);
+    padding: 24px; text-align: center;
+}
+.pp-card-icon {
+    width: 56px; height: 56px; border-radius: 16px; margin: 0 auto 14px;
+    display: flex; align-items: center; justify-content: center; font-size: 1.4rem;
+}
+.pp-card-icon.operativo { background: #ecfdf5; color: #10b981; }
+.pp-card-icon.restringido { background: #fffbeb; color: #d97706; }
+.pp-card-icon.completado { background: #eff6ff; color: #2563eb; }
+.pp-card h3 { font-size: 1rem; font-weight: 800; color: var(--text-primary); margin-bottom: 10px; }
+.pp-status {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 5px 14px; border-radius: 20px; font-size: 0.76rem; font-weight: 700;
+    margin-bottom: 10px;
+}
+.pp-status.operativo { background: #ecfdf5; color: #059669; }
+.pp-status.restringido { background: #fffbeb; color: #d97706; }
+.pp-status.completado { background: #eff6ff; color: #2563eb; }
+.pp-card-detail { font-size: 0.78rem; color: var(--text-muted); line-height: 1.5; }
+.pp-card-btn { width: 100%; margin-top: 16px; justify-content: center; }
+@media (max-width: 600px) {
+    .pp-cards { grid-template-columns: 1fr; }
+    .pp-hero { flex-direction: column; text-align: center; }
+}
+</style>
+{% endblock %}

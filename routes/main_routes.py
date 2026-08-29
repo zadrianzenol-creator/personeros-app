@@ -68,68 +68,61 @@ def dashboard():
 def registrar():
     use_mobile = is_mobile(request)
     template = "mobile_registrar.html" if use_mobile else "registrar.html"
-    colegios = Colegio.query.filter_by(is_active=True).order_by(Colegio.nombre).all()
+    es_admin = current_user.is_authenticated
+    colegios = Colegio.query.filter_by(is_active=True).order_by(Colegio.nombre).all() if es_admin else []
 
     if request.method == "POST":
         dni = request.form.get("dni", "").strip()
-        es_nuevo = request.form.get("nuevo") == "1"
+        # Solo un administrador autenticado puede dar de alta un personero nuevo.
+        es_nuevo = request.form.get("nuevo") == "1" and es_admin
 
         if not dni:
             flash("Ingrese un DNI valido.", "error")
-            return render_template(template, colegios=colegios)
+            return render_template(template, colegios=colegios, es_admin=es_admin)
 
         personero = Personero.query.filter_by(dni=dni).first()
 
         if personero:
             now = peru_now()
 
-            if personero.votos_finalizados:
-                flash(
-                    f"{personero.nombre_completo} ya envio sus votos el "
-                    f"{personero.votos_finalizados_at.strftime('%d/%m/%Y a las %H:%M') if personero.votos_finalizados_at else ''}. "
-                    "Su proceso ha finalizado y no se puede volver a ingresar.",
-                    "error",
-                )
-                return render_template(template, colegios=colegios)
-
             if personero.estado == "PRESENTE":
-                personero.ip_address = request.remote_addr
-                personero.last_active = now
-                log_activity("REINGRESO", f"Reingreso a votos - Mesa {personero.numero_mesa}", personero_id=personero.id, request_obj=request)
-                db.session.commit()
-                return redirect(url_for("main.contar_votos", personero_id=personero.id))
+                log_activity("REINGRESO", f"Reingreso - Mesa {personero.numero_mesa}", personero_id=personero.id, request_obj=request)
+            else:
+                personero.estado = "PRESENTE"
+                personero.fecha_registro = now
+                personero.hora_llegada = now.strftime("%H:%M:%S")
+                log_activity("CHECK_IN", f"Registro de asistencia - Mesa {personero.numero_mesa}", personero_id=personero.id, request_obj=request)
 
-            personero.estado = "PRESENTE"
-            personero.fecha_registro = now
-            personero.hora_llegada = now.strftime("%H:%M:%S")
             personero.ip_address = request.remote_addr
             personero.last_active = now
-            log_activity("CHECK_IN", f"Registro de asistencia - Mesa {personero.numero_mesa}", personero_id=personero.id, request_obj=request)
             db.session.commit()
 
-            return redirect(url_for("main.contar_votos", personero_id=personero.id))
+            return redirect(url_for("main.panel_personero", personero_id=personero.id))
 
         if not es_nuevo:
-            flash(f"El DNI {dni} no se encuentra registrado en el sistema.", "error")
-            return render_template(template, colegios=colegios)
+            flash("DNI no registrado. Comuniquese con el administrador o coordinador para verificar su asignacion.", "error")
+            return render_template(template, colegios=colegios, es_admin=es_admin)
 
         nombre_completo = request.form.get("nombre_completo", "").strip()
         telefono = request.form.get("telefono", "").strip()
         rol = request.form.get("rol", "Personero").strip() or "Personero"
         mesa_id = request.form.get("mesa_id", type=int)
+        modalidad_reporte = request.form.get("modalidad_reporte", "DIRECTO_SISTEMA").strip()
+        if modalidad_reporte not in ("DIRECTO_SISTEMA", "ASISTIDO_DIGITADOR"):
+            modalidad_reporte = "DIRECTO_SISTEMA"
 
         if not nombre_completo or not mesa_id:
             flash("Complete el nombre y seleccione una mesa para registrar un nuevo personero.", "error")
-            return render_template(template, colegios=colegios)
+            return render_template(template, colegios=colegios, es_admin=es_admin)
 
         mesa = Mesa.query.get(mesa_id)
         if not mesa or not mesa.is_active:
             flash("La mesa seleccionada no es valida.", "error")
-            return render_template(template, colegios=colegios)
+            return render_template(template, colegios=colegios, es_admin=es_admin)
 
         if Personero.query.filter_by(mesa_id=mesa.id).first():
             flash(f"La Mesa {mesa.numero} ya tiene un personero registrado.", "error")
-            return render_template(template, colegios=colegios)
+            return render_template(template, colegios=colegios, es_admin=es_admin)
 
         now = peru_now()
         nuevo_personero = Personero(
@@ -146,15 +139,28 @@ def registrar():
             hora_llegada=now.strftime("%H:%M:%S"),
             ip_address=request.remote_addr,
             last_active=now,
+            modalidad_reporte=modalidad_reporte,
         )
         db.session.add(nuevo_personero)
         db.session.flush()
-        log_activity("CHECK_IN", f"Registro nuevo de personero - Mesa {nuevo_personero.numero_mesa}", personero_id=nuevo_personero.id, request_obj=request)
+        log_activity(
+            "CHECK_IN",
+            f"Registro nuevo de personero (admin: {current_user.username}) - Mesa {nuevo_personero.numero_mesa}",
+            personero_id=nuevo_personero.id,
+            user_id=current_user.id,
+            request_obj=request,
+        )
         db.session.commit()
 
-        return redirect(url_for("main.contar_votos", personero_id=nuevo_personero.id))
+        return redirect(url_for("main.panel_personero", personero_id=nuevo_personero.id))
 
-    return render_template(template, colegios=colegios)
+    return render_template(template, colegios=colegios, es_admin=es_admin)
+
+
+@main_bp.route("/panel/<int:personero_id>")
+def panel_personero(personero_id):
+    personero = Personero.query.get_or_404(personero_id)
+    return render_template("panel_personero.html", personero=personero)
 
 
 @main_bp.route("/api/personero-dni/<dni>")
@@ -186,6 +192,9 @@ def api_personero_dni(dni):
 def contar_votos(personero_id):
     personero = Personero.query.get_or_404(personero_id)
 
+    if personero.modalidad_reporte != "DIRECTO_SISTEMA":
+        return redirect(url_for("main.panel_personero", personero_id=personero.id))
+
     if personero.votos_finalizados:
         return render_template(
             "contar_votos.html",
@@ -213,6 +222,9 @@ def contar_votos(personero_id):
 @main_bp.route("/api/finalizar-votos/<int:personero_id>", methods=["POST"])
 def api_finalizar_votos(personero_id):
     personero = Personero.query.get_or_404(personero_id)
+
+    if personero.modalidad_reporte != "DIRECTO_SISTEMA":
+        return jsonify({"error": "Esta mesa no tiene habilitado el registro de votos directo."}), 403
 
     if personero.votos_finalizados:
         return jsonify({"ok": True, "message": "Los votos ya habian sido enviados anteriormente."})
@@ -246,6 +258,9 @@ def _votos_no_negativo(valor, maximo=99999):
 @main_bp.route("/api/guardar-votos/<int:personero_id>", methods=["POST"])
 def api_guardar_votos(personero_id):
     personero = Personero.query.get_or_404(personero_id)
+
+    if personero.modalidad_reporte != "DIRECTO_SISTEMA":
+        return jsonify({"error": "Esta mesa no tiene habilitado el registro de votos directo."}), 403
 
     if personero.votos_finalizados:
         return jsonify({"error": "Ya enviaste tus votos. El proceso esta finalizado y no se puede modificar."}), 403
@@ -355,7 +370,7 @@ def confirmar_asistencia(personero_id):
     incidente = request.form.get("incidente", "NINGUNO").strip()
     estado_anterior = personero.estado
 
-    if nuevo_estado in ["PRESENTE", "AUSENTE", "PENDIENTE"]:
+    if nuevo_estado in ["PRESENTE", "AUSENTE", "PENDIENTE", "REEMPLAZADO", "INCIDENCIA"]:
         personero.estado = nuevo_estado
         personero.incidente = incidente
         log_activity(
@@ -400,6 +415,7 @@ def api_personeros():
     fecha = request.args.get("fecha", "")
     search = request.args.get("search", "").strip()
     estado = request.args.get("estado", "")
+    modalidad = request.args.get("modalidad", "")
 
     query = Personero.query
 
@@ -417,6 +433,8 @@ def api_personeros():
         )
     if estado:
         query = query.filter_by(estado=estado)
+    if modalidad:
+        query = query.filter_by(modalidad_reporte=modalidad)
 
     query = query.order_by(Personero.fecha_registro.desc())
     pagination = query.paginate(page=page, per_page=per_page, error_out=False)
@@ -503,6 +521,7 @@ def api_mesas_pendientes_votos():
                     "mesa_numero": m.numero,
                     "personero_nombre": personero.nombre_completo if personero else None,
                     "personero_estado": personero.estado if personero else None,
+                    "modalidad_reporte": personero.modalidad_reporte if personero else None,
                 })
         resultado.append({
             "colegio_id": c.id,
@@ -510,6 +529,7 @@ def api_mesas_pendientes_votos():
             "total_mesas": len(mesas),
             "mesas_reportadas": len(mesas) - len(pendientes),
             "mesas_pendientes": len(pendientes),
+            "pendientes_digitador": sum(1 for p in pendientes if p["modalidad_reporte"] == "ASISTIDO_DIGITADOR"),
             "pendientes": pendientes,
         })
 

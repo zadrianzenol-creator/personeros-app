@@ -89,8 +89,8 @@
         {% if personero.votos_finalizados_at %}el {{ personero.votos_finalizados_at.strftime('%d/%m/%Y a las %H:%M') }}{% endif %}.
         Tu proceso como personero ha terminado y no se puede volver a ingresar.
     </p>
-    <a href="/" class="nav-btn nav-btn-next" style="max-width:300px;text-decoration:none;padding:14px 24px">
-        <i class="fas fa-home"></i> Volver al Inicio
+    <a href="{{ url_for('main.panel_personero', personero_id=personero.id) }}" class="nav-btn nav-btn-next" style="max-width:300px;text-decoration:none;padding:14px 24px">
+        <i class="fas fa-arrow-left"></i> Volver a mi Panel
     </a>
 </div>
 {% else %}
@@ -177,8 +177,8 @@
     <h2>Votos Enviados</h2>
     <p>Los conteos de todos los cargos han sido registrados exitosamente. Tu proceso como personero ha finalizado.</p>
     <div class="resumen-card" id="resumenCard"></div>
-    <a href="/" class="nav-btn nav-btn-next" style="max-width:300px;text-decoration:none;padding:14px 24px">
-        <i class="fas fa-home"></i> Volver al Inicio
+    <a href="{{ url_for('main.panel_personero', personero_id=personero.id) }}" class="nav-btn nav-btn-next" style="max-width:300px;text-decoration:none;padding:14px 24px">
+        <i class="fas fa-arrow-left"></i> Volver a mi Panel
     </a>
 </div>
 <script>

@@ -124,6 +124,13 @@
                         <option value="PRESENTE">Presente</option>
                         <option value="AUSENTE">Ausente</option>
                         <option value="PENDIENTE">Pendiente</option>
+                        <option value="REEMPLAZADO">Reemplazado</option>
+                        <option value="INCIDENCIA">Incidencia</option>
+                    </select>
+                    <select class="filter-input" id="filterModalidad" onchange="cargarPersoneros()">
+                        <option value="">Todas las modalidades</option>
+                        <option value="DIRECTO_SISTEMA">Directo al sistema</option>
+                        <option value="ASISTIDO_DIGITADOR">Asistido por digitador</option>
                     </select>
                     <input type="text" class="filter-input" id="filterSearch" placeholder="Buscar por DNI..." onkeyup="debounceSearch()" style="min-width:200px;">
                 </div>
@@ -135,6 +142,7 @@
                                 <th>Colegio</th>
                                 <th>Mesa</th>
                                 <th>Hora</th>
+                                <th>Modalidad</th>
                                 <th>Estado</th>
                                 <th>Accion</th>
                             </tr>
@@ -321,6 +329,7 @@
 .colegio-votos-badge { font-size: 0.72rem; font-weight: 800; padding: 4px 10px; border-radius: 20px; flex-shrink: 0; }
 .colegio-votos-badge.complete { background: rgba(16,185,129,0.12); color: #10b981; }
 .colegio-votos-badge.partial { background: rgba(245,158,11,0.12); color: #d97706; }
+.colegio-votos-badge.digitador { background: rgba(37,211,102,0.12); color: #1a9c4b; display: inline-flex; align-items: center; gap: 5px; }
 .colegio-votos-mesas { display: none; padding: 6px 14px 12px; border-top: 1px solid var(--border-color); }
 .colegio-votos-group.open .colegio-votos-mesas { display: block; }
 .colegio-votos-group.open .chevron-icon { transform: rotate(180deg); }
@@ -333,6 +342,14 @@
 .mesa-pendiente-numero { font-weight: 700; color: var(--text-primary); flex-shrink: 0; }
 .mesa-pendiente-personero { color: var(--text-muted); flex: 1; text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .mesa-pendiente-personero.sin-personero { color: #ef4444; }
+.badge-modalidad {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 3px 9px; border-radius: 20px; font-size: 0.68rem; font-weight: 700;
+    flex-shrink: 0; white-space: nowrap;
+}
+.badge-modalidad.sistema { background: rgba(99,102,241,0.12); color: #6366f1; }
+.badge-modalidad.digitador { background: rgba(37,211,102,0.12); color: #1a9c4b; }
+.mesa-pendiente-numero-wrap { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
 
 .dash-grid {
     display: grid; grid-template-columns: 1.4fr 1fr; gap: 20px;
@@ -441,6 +458,7 @@ function cargarPersoneros(page) {
     if (v('filterColegio')) params.set('colegio_id', v('filterColegio'));
     if (v('filterFecha')) params.set('fecha', v('filterFecha'));
     if (v('filterEstado')) params.set('estado', v('filterEstado'));
+    if (v('filterModalidad')) params.set('modalidad', v('filterModalidad'));
     if (v('filterSearch')) params.set('search', v('filterSearch'));
 
     fetch('/api/personeros?' + params.toString())
@@ -451,11 +469,18 @@ function cargarPersoneros(page) {
         });
 }
 
+function modalidadBadge(modalidad) {
+    if (modalidad === 'ASISTIDO_DIGITADOR') {
+        return '<span class="badge-modalidad digitador"><i class="fas fa-keyboard"></i> Digitador</span>';
+    }
+    return '<span class="badge-modalidad sistema"><i class="fas fa-mobile-screen-button"></i> Sistema</span>';
+}
+
 function renderPersoneros(list) {
     const tbody = document.getElementById('personerosBody');
     const isMobile = window.innerWidth <= 768;
     if (!list.length) {
-        tbody.innerHTML = '<tr><td colspan="6" class="empty-state"><i class="fas fa-inbox"></i><p>Sin registros</p></td></tr>';
+        tbody.innerHTML = '<tr><td colspan="7" class="empty-state"><i class="fas fa-inbox"></i><p>Sin registros</p></td></tr>';
         return;
     }
     if (isMobile) {
@@ -471,15 +496,18 @@ function renderPersoneros(list) {
                             <span class="badge badge-${p.estado.toLowerCase()}" style="flex-shrink:0;">${p.estado}</span>
                         </div>
                         <div style="display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:8px;">
-                            <div style="display:flex; gap:12px; flex-wrap:wrap; font-size:0.75rem; color:var(--text-muted);">
+                            <div style="display:flex; gap:12px; flex-wrap:wrap; font-size:0.75rem; color:var(--text-muted); align-items:center;">
                                 <span><i class="fas fa-table-cells"></i> Mesa ${p.numero_mesa}</span>
                                 <span><i class="fas fa-clock"></i> ${p.hora_llegada}</span>
+                                ${modalidadBadge(p.modalidad_reporte)}
                             </div>
                             <form method="POST" action="/confirmar/${p.id}" style="display:inline; flex-shrink:0;">
                                 <select name="estado" onchange="this.form.submit()" style="padding:4px 6px; border-radius:6px; border:1px solid var(--border-color); background:var(--bg-secondary); color:var(--text-primary); font-size:0.7rem; cursor:pointer;">
                                     <option value="PRESENTE" ${p.estado==='PRESENTE'?'selected':''}>PRESENTE</option>
                                     <option value="AUSENTE" ${p.estado==='AUSENTE'?'selected':''}>AUSENTE</option>
                                     <option value="PENDIENTE" ${p.estado==='PENDIENTE'?'selected':''}>PENDIENTE</option>
+                                    <option value="REEMPLAZADO" ${p.estado==='REEMPLAZADO'?'selected':''}>REEMPLAZADO</option>
+                                    <option value="INCIDENCIA" ${p.estado==='INCIDENCIA'?'selected':''}>INCIDENCIA</option>
                                 </select>
                             </form>
                         </div>
@@ -494,6 +522,7 @@ function renderPersoneros(list) {
                 <td>${p.colegio}</td>
                 <td><strong>${p.numero_mesa}</strong></td>
                 <td>${p.hora_llegada}</td>
+                <td>${modalidadBadge(p.modalidad_reporte)}</td>
                 <td><span class="badge badge-${p.estado.toLowerCase()}">${p.estado}</span></td>
                 <td>
                     <form method="POST" action="/confirmar/${p.id}" style="display:inline;">
@@ -501,6 +530,8 @@ function renderPersoneros(list) {
                             <option value="PRESENTE" ${p.estado==='PRESENTE'?'selected':''}>PRESENTE</option>
                             <option value="AUSENTE" ${p.estado==='AUSENTE'?'selected':''}>AUSENTE</option>
                             <option value="PENDIENTE" ${p.estado==='PENDIENTE'?'selected':''}>PENDIENTE</option>
+                            <option value="REEMPLAZADO" ${p.estado==='REEMPLAZADO'?'selected':''}>REEMPLAZADO</option>
+                            <option value="INCIDENCIA" ${p.estado==='INCIDENCIA'?'selected':''}>INCIDENCIA</option>
                         </select>
                     </form>
                 </td>
@@ -688,12 +719,18 @@ function renderMesasPendientes() {
         const abierto = coleGroupsAbiertos.has(c.colegio_id);
         const mesasHtml = c.pendientes.map(m => `
             <div class="mesa-pendiente-row">
-                <span class="mesa-pendiente-numero">Mesa ${m.mesa_numero}</span>
+                <span class="mesa-pendiente-numero-wrap">
+                    <span class="mesa-pendiente-numero">Mesa ${m.mesa_numero}</span>
+                    ${m.modalidad_reporte ? modalidadBadge(m.modalidad_reporte) : ''}
+                </span>
                 <span class="mesa-pendiente-personero ${!m.personero_nombre ? 'sin-personero' : ''}">
                     ${m.personero_nombre ? m.personero_nombre + ' (' + m.personero_estado + ')' : 'Sin personero asignado'}
                 </span>
             </div>
         `).join('');
+        const digitadorHint = c.pendientes_digitador > 0
+            ? `<span class="colegio-votos-badge digitador"><i class="fas fa-keyboard"></i> ${c.pendientes_digitador} por digitador</span>`
+            : '';
         return `
             <div class="colegio-votos-group ${abierto ? 'open' : ''}">
                 <div class="colegio-votos-header" onclick="toggleColeGroup(${c.colegio_id})">
@@ -701,7 +738,8 @@ function renderMesasPendientes() {
                         <div class="colegio-votos-nombre">${c.colegio_nombre}</div>
                         <div class="colegio-votos-sub">${c.mesas_reportadas} de ${c.total_mesas} mesas reportaron</div>
                     </div>
-                    <div style="display:flex; align-items:center; gap:10px;">
+                    <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; justify-content:flex-end;">
+                        ${digitadorHint}
                         <span class="colegio-votos-badge partial">${c.mesas_pendientes} pendiente${c.mesas_pendientes === 1 ? '' : 's'}</span>
                         <i class="fas fa-chevron-down chevron-icon"></i>
                     </div>
