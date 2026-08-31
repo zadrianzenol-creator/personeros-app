@@ -259,6 +259,44 @@
     </div>
 </div>
 
+<div class="modal-overlay" id="modalReemplazo" style="display:none;">
+    <div class="modal-box">
+        <div class="modal-header">
+            <h3><i class="fas fa-user-pen"></i> Reemplazar Personero</h3>
+            <button type="button" class="modal-close" onclick="cerrarModalReemplazo()"><i class="fas fa-times"></i></button>
+        </div>
+        <p class="modal-subtitle">
+            Mesa <strong id="reemplazoMesaNum">-</strong> — personero actual: <strong id="reemplazoNombreActual">-</strong>
+        </p>
+        <p class="modal-warning"><i class="fas fa-triangle-exclamation"></i> El DNI actual quedara deshabilitado y no podra volver a ingresar al sistema.</p>
+        <form method="POST" id="formReemplazo">
+            <div class="form-group">
+                <label>DNI del nuevo personero <span class="req">*</span></label>
+                <input type="text" name="nuevo_dni" id="reemplazoDni" required maxlength="12">
+            </div>
+            <div class="form-group">
+                <label>Nombre completo <span class="req">*</span></label>
+                <input type="text" name="nuevo_nombre" id="reemplazoNombre" required>
+            </div>
+            <div class="form-group">
+                <label>Telefono</label>
+                <input type="text" name="nuevo_telefono" id="reemplazoTelefono">
+            </div>
+            <div class="form-group">
+                <label>Modalidad de reporte</label>
+                <select name="nueva_modalidad" id="reemplazoModalidad">
+                    <option value="DIRECTO_SISTEMA">Directo al sistema</option>
+                    <option value="ASISTIDO_DIGITADOR">Asistido por digitador</option>
+                </select>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-secondary" onclick="cerrarModalReemplazo()">Cancelar</button>
+                <button type="submit" class="btn btn-danger"><i class="fas fa-right-left"></i> Confirmar Reemplazo</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <style>
 .dash-hero {
     display: flex; align-items: center; justify-content: space-between;
@@ -438,6 +476,61 @@
     .especial-dash-item { flex: 1; min-width: 140px; }
     .desktop-only { display: none; }
 }
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 16px;
+}
+.modal-box {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    padding: 22px;
+    width: 100%;
+    max-width: 440px;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+.modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 4px;
+}
+.modal-header h3 { font-size: 1rem; color: var(--text-primary); display: flex; align-items: center; gap: 8px; }
+.modal-close {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 1rem;
+    cursor: pointer;
+    padding: 4px;
+}
+.modal-subtitle { font-size: 0.82rem; color: var(--text-secondary); margin-bottom: 10px; }
+.modal-warning {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    color: #991b1b;
+    border-radius: 10px;
+    padding: 10px 12px;
+    font-size: 0.78rem;
+    font-weight: 500;
+    margin-bottom: 16px;
+}
+.modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 8px;
+}
 </style>
 {% endblock %}
 
@@ -476,6 +569,21 @@ function modalidadBadge(modalidad) {
     return '<span class="badge-modalidad sistema"><i class="fas fa-mobile-screen-button"></i> Sistema</span>';
 }
 
+function abrirModalReemplazo(btn) {
+    document.getElementById('formReemplazo').action = '/api/personero/' + btn.dataset.id + '/reemplazar';
+    document.getElementById('reemplazoMesaNum').textContent = btn.dataset.mesa;
+    document.getElementById('reemplazoNombreActual').textContent = btn.dataset.nombre;
+    document.getElementById('reemplazoModalidad').value = btn.dataset.modalidad || 'DIRECTO_SISTEMA';
+    document.getElementById('reemplazoDni').value = '';
+    document.getElementById('reemplazoNombre').value = '';
+    document.getElementById('reemplazoTelefono').value = '';
+    document.getElementById('modalReemplazo').style.display = 'flex';
+}
+
+function cerrarModalReemplazo() {
+    document.getElementById('modalReemplazo').style.display = 'none';
+}
+
 function renderPersoneros(list) {
     const tbody = document.getElementById('personerosBody');
     const isMobile = window.innerWidth <= 768;
@@ -510,6 +618,7 @@ function renderPersoneros(list) {
                                     <option value="INCIDENCIA" ${p.estado==='INCIDENCIA'?'selected':''}>INCIDENCIA</option>
                                 </select>
                             </form>
+                            ${p.estado !== 'REEMPLAZADO' ? `<button type="button" class="btn btn-sm btn-secondary" style="flex-shrink:0;" title="Reemplazar personero" data-id="${p.id}" data-nombre="${p.nombre_completo}" data-mesa="${p.numero_mesa}" data-modalidad="${p.modalidad_reporte}" onclick="abrirModalReemplazo(this)"><i class="fas fa-user-pen"></i></button>` : ''}
                         </div>
                     </div>
                 </td>
@@ -525,15 +634,18 @@ function renderPersoneros(list) {
                 <td>${modalidadBadge(p.modalidad_reporte)}</td>
                 <td><span class="badge badge-${p.estado.toLowerCase()}">${p.estado}</span></td>
                 <td>
-                    <form method="POST" action="/confirmar/${p.id}" style="display:inline;">
-                        <select name="estado" onchange="this.form.submit()" style="padding:5px 8px; border-radius:6px; border:1px solid var(--border-color); background:var(--bg-secondary); color:var(--text-primary); font-size:0.75rem; cursor:pointer;">
-                            <option value="PRESENTE" ${p.estado==='PRESENTE'?'selected':''}>PRESENTE</option>
-                            <option value="AUSENTE" ${p.estado==='AUSENTE'?'selected':''}>AUSENTE</option>
-                            <option value="PENDIENTE" ${p.estado==='PENDIENTE'?'selected':''}>PENDIENTE</option>
-                            <option value="REEMPLAZADO" ${p.estado==='REEMPLAZADO'?'selected':''}>REEMPLAZADO</option>
-                            <option value="INCIDENCIA" ${p.estado==='INCIDENCIA'?'selected':''}>INCIDENCIA</option>
-                        </select>
-                    </form>
+                    <div style="display:flex; align-items:center; gap:6px;">
+                        <form method="POST" action="/confirmar/${p.id}" style="display:inline;">
+                            <select name="estado" onchange="this.form.submit()" style="padding:5px 8px; border-radius:6px; border:1px solid var(--border-color); background:var(--bg-secondary); color:var(--text-primary); font-size:0.75rem; cursor:pointer;">
+                                <option value="PRESENTE" ${p.estado==='PRESENTE'?'selected':''}>PRESENTE</option>
+                                <option value="AUSENTE" ${p.estado==='AUSENTE'?'selected':''}>AUSENTE</option>
+                                <option value="PENDIENTE" ${p.estado==='PENDIENTE'?'selected':''}>PENDIENTE</option>
+                                <option value="REEMPLAZADO" ${p.estado==='REEMPLAZADO'?'selected':''}>REEMPLAZADO</option>
+                                <option value="INCIDENCIA" ${p.estado==='INCIDENCIA'?'selected':''}>INCIDENCIA</option>
+                            </select>
+                        </form>
+                        ${p.estado !== 'REEMPLAZADO' ? `<button type="button" class="btn btn-sm btn-secondary" title="Reemplazar personero" data-id="${p.id}" data-nombre="${p.nombre_completo}" data-mesa="${p.numero_mesa}" data-modalidad="${p.modalidad_reporte}" onclick="abrirModalReemplazo(this)"><i class="fas fa-user-pen"></i></button>` : ''}
+                    </div>
                 </td>
             </tr>
         `).join('');

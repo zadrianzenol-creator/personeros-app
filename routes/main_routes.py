@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, jsonify, redirect, url_for, flash
+from flask import Blueprint, render_template, request, jsonify, redirect, url_for, flash, abort
 from flask_login import login_required, current_user
 from database import db, peru_now
 from models.personero import Colegio, Mesa, Personero
@@ -83,6 +83,14 @@ def registrar():
         personero = Personero.query.filter_by(dni=dni).first()
 
         if personero:
+            if personero.estado == "REEMPLAZADO":
+                flash(
+                    "Este DNI ya no esta habilitado para participar. Fue reemplazado por otro "
+                    "personero en esta mesa. Comuniquese con el administrador si cree que es un error.",
+                    "error",
+                )
+                return render_template(template, colegios=colegios, es_admin=es_admin)
+
             now = peru_now()
 
             if personero.estado == "PRESENTE":
@@ -388,6 +396,69 @@ def confirmar_asistencia(personero_id):
     return redirect(request.referrer or url_for("main.dashboard"))
 
 
+@main_bp.route("/api/personero/<int:personero_id>/reemplazar", methods=["POST"])
+@login_required
+def reemplazar_personero(personero_id):
+    if current_user.role != "admin":
+        abort(403)
+
+    original = Personero.query.get_or_404(personero_id)
+
+    nuevo_dni = request.form.get("nuevo_dni", "").strip()
+    nuevo_nombre = request.form.get("nuevo_nombre", "").strip()
+    nuevo_telefono = request.form.get("nuevo_telefono", "").strip()
+    nueva_modalidad = request.form.get("nueva_modalidad", original.modalidad_reporte).strip()
+    if nueva_modalidad not in ("DIRECTO_SISTEMA", "ASISTIDO_DIGITADOR"):
+        nueva_modalidad = original.modalidad_reporte
+
+    if not nuevo_dni or not nuevo_nombre:
+        flash("Ingrese el DNI y el nombre completo del nuevo personero.", "error")
+        return redirect(request.referrer or url_for("main.dashboard"))
+
+    if nuevo_dni == original.dni:
+        flash("El DNI del nuevo personero debe ser diferente al del personero reemplazado.", "error")
+        return redirect(request.referrer or url_for("main.dashboard"))
+
+    if Personero.query.filter_by(dni=nuevo_dni).first():
+        flash(f'Ya existe un personero registrado con el DNI "{nuevo_dni}".', "error")
+        return redirect(request.referrer or url_for("main.dashboard"))
+
+    nuevo = Personero(
+        nombre_completo=nuevo_nombre,
+        dni=nuevo_dni,
+        telefono=nuevo_telefono,
+        rol=original.rol,
+        colegio_id=original.colegio_id,
+        mesa_id=original.mesa_id,
+        numero_mesa=original.numero_mesa,
+        estado="PENDIENTE",
+        incidente="NINGUNO",
+        modalidad_reporte=nueva_modalidad,
+    )
+    db.session.add(nuevo)
+
+    estado_anterior = original.estado
+    original.estado = "REEMPLAZADO"
+    original.incidente = "NINGUNO"
+
+    log_activity(
+        "PERSONERO_REEMPLAZADO",
+        f"Mesa {original.numero_mesa}: {original.nombre_completo} (DNI {original.dni}, estaba {estado_anterior}) "
+        f"reemplazado por {nuevo_nombre} (DNI {nuevo_dni})",
+        personero_id=original.id,
+        user_id=current_user.id,
+        request_obj=request,
+    )
+    db.session.commit()
+
+    flash(
+        f'"{original.nombre_completo}" fue reemplazado por "{nuevo_nombre}" en la Mesa {original.numero_mesa}. '
+        "El DNI anterior ya no tiene acceso al sistema.",
+        "success",
+    )
+    return redirect(request.referrer or url_for("main.dashboard"))
+
+
 @main_bp.route("/api/mesas/<int:colegio_id>")
 def api_mesas(colegio_id):
     mesas = Mesa.query.filter_by(colegio_id=colegio_id, is_active=True).order_by(Mesa.numero).all()
@@ -450,7 +521,6 @@ def api_personeros():
 @main_bp.route("/api/stats")
 @login_required
 def api_stats():
-    hoy = peru_now().date()
     now = peru_now()
 
     stats = db.session.query(
@@ -460,7 +530,7 @@ def api_stats():
         db.func.count(db.case((Personero.estado == "PENDIENTE", 1))).label("pendientes"),
         db.func.count(db.distinct(Personero.colegio_id)).label("colegios"),
         db.func.count(db.distinct(Personero.mesa_id)).label("mesas"),
-    ).filter(db.func.date(Personero.fecha_registro) == hoy).first()
+    ).first()
 
     total_general = Personero.query.count()
 

@@ -34,13 +34,21 @@
                 </select>
             </div>
         </div>
+        {% if current_user.role == 'admin' %}
+        <p class="cargo-hint"><i class="fas fa-circle-info"></i> Se listan todos los colegios y mesas. Si una mesa y cargo ya tienen votos registrados, se cargan aqui para que pueda corregirlos y guardar de nuevo.</p>
+        {% else %}
         <p class="cargo-hint"><i class="fas fa-circle-info"></i> Solo se listan colegios y mesas con personero de modalidad "Asistido por digitador". Los votos se guardan por separado para cada cargo. Si esta mesa tiene votos de varios cargos, registre uno, guarde, y vuelva a esta pagina para el siguiente.</p>
+        {% endif %}
         <div class="personero-mesa-box" id="personeroMesaBox" style="display:none;">
             <i class="fas fa-user"></i>
             <div>
                 <span class="personero-mesa-label">Personero de esta mesa</span>
                 <span class="personero-mesa-nombre" id="personeroMesaNombre">—</span>
             </div>
+        </div>
+        <div class="correccion-warning" id="correccionWarning" style="display:none;">
+            <i class="fas fa-pen-to-square"></i>
+            <span id="correccionTexto"></span>
         </div>
         <div class="ya-registrado-warning" id="yaRegistradoWarning" style="display:none;">
             <i class="fas fa-triangle-exclamation"></i>
@@ -147,6 +155,19 @@
     font-weight: 700;
     color: var(--text-primary);
 }
+.correccion-warning {
+    margin-top: 12px;
+    padding: 12px 16px;
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    border-radius: 12px;
+    color: #1d4ed8;
+    font-size: 0.85rem;
+    font-weight: 500;
+    align-items: center;
+    gap: 10px;
+}
+.correccion-warning i { font-size: 1rem; flex-shrink: 0; }
 .ya-registrado-warning {
     margin-top: 12px;
     padding: 12px 16px;
@@ -277,6 +298,7 @@
 </style>
 
 <script>
+const ES_ADMIN = {{ 'true' if current_user.role == 'admin' else 'false' }};
 let mesasCargadas = [];
 
 function cargarMesas() {
@@ -323,22 +345,58 @@ function ocultarAvisoRegistrado() {
     document.getElementById('yaRegistradoWarning').style.display = 'none';
 }
 
+function ocultarModoCorreccion() {
+    document.getElementById('correccionWarning').style.display = 'none';
+}
+
+function limpiarVotosInputs(cargoId) {
+    document.querySelectorAll('.cargo-partidos-section[data-cargo="' + cargoId + '"] .voto-input').forEach(i => { i.value = 0; });
+    document.querySelectorAll('.especial-input').forEach(i => { i.value = 0; });
+    calcularTotales();
+}
+
+function precargarVotos(data) {
+    document.querySelectorAll('.voto-input[data-partido]').forEach(input => {
+        const pid = input.dataset.partido;
+        if (data.votos && data.votos[pid] !== undefined) input.value = data.votos[pid];
+    });
+    const mapEspecial = { voto_blanco: 'BLANCO', voto_nulo: 'NULO', voto_impugnado: 'IMPUGNADO' };
+    document.querySelectorAll('.especial-input').forEach(input => {
+        const tipo = mapEspecial[input.name];
+        if (tipo && data.especiales && data.especiales[tipo] !== undefined) input.value = data.especiales[tipo];
+    });
+    calcularTotales();
+}
+
 function verificarVotosExistentes() {
     const mesaId = document.getElementById('selectMesa').value;
     const cargoId = document.getElementById('selectCargo').value;
     ocultarAvisoRegistrado();
+    ocultarModoCorreccion();
     if (!mesaId || !cargoId) return;
+
+    limpiarVotosInputs(cargoId);
 
     fetch('/votos/api/votos-existen?mesa_id=' + mesaId + '&cargo=' + cargoId)
         .then(r => r.json())
         .then(data => {
-            if (data.registrado) {
+            if (!data.registrado) return;
+            const mesaTexto = document.getElementById('selectMesa').selectedOptions[0].textContent;
+            const cargoTexto = document.getElementById('selectCargo').selectedOptions[0].textContent;
+
+            if (ES_ADMIN) {
+                precargarVotos(data);
+                document.getElementById('correccionTexto').textContent =
+                    'Ya existen votos de ' + cargoTexto + ' para la ' + mesaTexto +
+                    (data.fecha ? ' (registrados el ' + data.fecha + ')' : '') +
+                    '. Se cargaron los valores actuales: corrija lo necesario y guarde.';
+                document.getElementById('correccionWarning').style.display = 'flex';
+            } else {
                 mesaYaRegistrada = true;
-                const mesaTexto = document.getElementById('selectMesa').selectedOptions[0].textContent;
-                const cargoTexto = document.getElementById('selectCargo').selectedOptions[0].textContent;
                 document.getElementById('yaRegistradoTexto').textContent =
                     'Los votos de ' + cargoTexto + ' para la ' + mesaTexto + ' ya fueron registrados' +
-                    (data.fecha ? ' el ' + data.fecha : '') + '. No se puede volver a registrar.';
+                    (data.fecha ? ' el ' + data.fecha : '') +
+                    '. No se puede volver a registrar. Si son incorrectos, comuniquese con el administrador.';
                 document.getElementById('yaRegistradoWarning').style.display = 'flex';
             }
         });

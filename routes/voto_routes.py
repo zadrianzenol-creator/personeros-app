@@ -14,7 +14,10 @@ def _colegios_con_digitador():
         row[0] for row in
         db.session.query(Colegio.id)
         .join(Personero, Personero.colegio_id == Colegio.id)
-        .filter(Personero.modalidad_reporte == "ASISTIDO_DIGITADOR")
+        .filter(
+            Personero.modalidad_reporte == "ASISTIDO_DIGITADOR",
+            Personero.estado != "REEMPLAZADO",
+        )
         .distinct()
         .all()
     }
@@ -55,7 +58,9 @@ def registrar_votos():
             return redirect(url_for("votos.registrar_votos"))
 
         if es_digitador:
-            personero_mesa = Personero.query.filter_by(mesa_id=mesa_id).first()
+            personero_mesa = Personero.query.filter(
+                Personero.mesa_id == mesa_id, Personero.estado != "REEMPLAZADO"
+            ).first()
             if personero_mesa and personero_mesa.modalidad_reporte != "ASISTIDO_DIGITADOR":
                 flash(
                     f"La Mesa {mesa.numero} tiene un personero con modalidad directo al sistema. "
@@ -68,13 +73,16 @@ def registrar_votos():
             Voto.query.filter_by(mesa_id=mesa_id, cargo=cargo_id).first()
             or VotoEspecial.query.filter_by(mesa_id=mesa_id, cargo=cargo_id).first()
         )
-        if ya_registrado:
+        if ya_registrado and es_digitador:
             flash(
                 f"Los votos de {cargo_info['nombre']} para la Mesa {mesa.numero} ya fueron "
-                "registrados anteriormente. No se puede volver a registrar la misma mesa y cargo.",
+                "registrados anteriormente. No se puede volver a registrar la misma mesa y cargo. "
+                "Si son incorrectos, comuniquese con el administrador para corregirlos.",
                 "error",
             )
             return redirect(url_for("votos.registrar_votos"))
+
+        es_correccion = ya_registrado is not None
 
         partidos_permitidos = {p["id"]: p for p in cargo_info["partidos"] if p["activo"]}
 
@@ -126,14 +134,17 @@ def registrar_votos():
 
         entry = ActivityLog(
             user_id=current_user.id,
-            tipo="VOTOS_REGISTRADOS_ADMIN",
-            detalle=f"Registro manual de votos de {cargo_info['nombre']} - Mesa {mesa_id}",
+            tipo="VOTOS_CORREGIDOS_ADMIN" if es_correccion else "VOTOS_REGISTRADOS_ADMIN",
+            detalle=f"{'Correccion' if es_correccion else 'Registro manual'} de votos de {cargo_info['nombre']} - Mesa {mesa_id}",
             ip_address=request.remote_addr,
             user_agent=request.headers.get("User-Agent", "")[:300],
         )
         db.session.add(entry)
         db.session.commit()
-        flash(f"Votos de {cargo_info['nombre']} registrados exitosamente.", "success")
+        flash(
+            f"Votos de {cargo_info['nombre']} {'corregidos' if es_correccion else 'registrados'} exitosamente.",
+            "success",
+        )
         return redirect(url_for("votos.registrar_votos"))
 
     return render_template("registrar_votos.html", colegios=colegios, cargos=CARGOS)
@@ -148,13 +159,15 @@ def api_votos_existen():
     if not mesa_id or not cargo_id:
         return jsonify({"registrado": False})
 
-    voto = Voto.query.filter_by(mesa_id=mesa_id, cargo=cargo_id).first()
-    especial = VotoEspecial.query.filter_by(mesa_id=mesa_id, cargo=cargo_id).first()
-    registro = voto or especial
+    votos = Voto.query.filter_by(mesa_id=mesa_id, cargo=cargo_id).all()
+    especiales = VotoEspecial.query.filter_by(mesa_id=mesa_id, cargo=cargo_id).all()
+    registro = votos[0] if votos else (especiales[0] if especiales else None)
 
     return jsonify({
         "registrado": registro is not None,
         "fecha": registro.fecha_registro.strftime("%d/%m/%Y %H:%M") if registro else None,
+        "votos": {str(v.partido_id): v.votos for v in votos},
+        "especiales": {e.tipo: e.cantidad for e in especiales},
     })
 
 
@@ -164,12 +177,15 @@ def api_mesas(colegio_id):
     query = Mesa.query.filter_by(colegio_id=colegio_id, is_active=True)
     if current_user.role == "digitador":
         query = query.join(Personero, Personero.mesa_id == Mesa.id).filter(
-            Personero.modalidad_reporte == "ASISTIDO_DIGITADOR"
+            Personero.modalidad_reporte == "ASISTIDO_DIGITADOR",
+            Personero.estado != "REEMPLAZADO",
         )
     mesas = query.order_by(Mesa.numero).all()
     resultado = []
     for m in mesas:
-        personero = Personero.query.filter_by(mesa_id=m.id).first()
+        personero = Personero.query.filter(
+            Personero.mesa_id == m.id, Personero.estado != "REEMPLAZADO"
+        ).first()
         data = m.to_dict()
         data["personero_nombre"] = personero.nombre_completo if personero else None
         data["personero_dni"] = personero.dni if personero else None
