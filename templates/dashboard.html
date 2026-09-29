@@ -746,7 +746,7 @@ function renderVotosCargo() {
             const pct = Math.round((info.votos / maxVotos) * 100);
             return `
                 <div class="voto-barra">
-                    <img src="/static/img/${cargoInfo.imagen_folder}/${img}" class="voto-barra-img" alt="${nombre}" onerror="this.style.display='none'">
+                    <img src="{{ url_for('static', filename='img') }}/${cargoInfo.imagen_folder}/${img}" class="voto-barra-img" alt="${nombre}" onerror="this.style.display='none'">
                     <div class="voto-barra-info">
                         <div class="voto-barra-nombre">${info.sigla} — ${nombre}</div>
                         <div class="voto-barra-track"><div class="voto-barra-fill" style="width:${pct}%"></div></div>
