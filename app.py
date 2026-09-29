@@ -10,6 +10,9 @@ from routes.auth_routes import auth_bp
 from routes.main_routes import main_bp
 from routes.voto_routes import votos_bp
 
+# Asegura la carpeta de SQLite (personeros/instance) para hosting
+os.makedirs(os.path.join(os.path.dirname(os.path.abspath(__file__)), "instance"), exist_ok=True)
+
 
 def create_app():
     app = Flask(__name__)
