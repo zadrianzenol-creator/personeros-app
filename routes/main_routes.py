@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, request, jsonify, redirect, url_for, flash, abort
 from flask_login import login_required, current_user
 from database import db, peru_now
-from models.personero import Colegio, Mesa, Personero
+from models.personero import Colegio, Mesa, Personero, mesa_numero_texto
 from models.voto import Voto, VotoEspecial, PARTIDOS, CARGOS
 from models.activity import ActivityLog
 from datetime import datetime, timedelta
@@ -192,7 +192,7 @@ def api_personero_dni(dni):
         "colegio_id": personero.colegio_id,
         "colegio_nombre": personero.colegio.nombre if personero.colegio else "",
         "mesa_id": personero.mesa_id,
-        "numero_mesa": personero.numero_mesa,
+        "numero_mesa": mesa_numero_texto(personero.numero_mesa),
     })
 
 
@@ -474,7 +474,7 @@ def api_mesas_libres(colegio_id):
         .order_by(Mesa.numero)
         .all()
     )
-    return jsonify([{"id": m.id, "numero": m.numero} for m in mesas])
+    return jsonify([{"id": m.id, "numero": mesa_numero_texto(m.numero)} for m in mesas])
 
 
 @main_bp.route("/api/personeros")
@@ -588,7 +588,7 @@ def api_mesas_pendientes_votos():
                 personero = Personero.query.filter_by(mesa_id=m.id).first()
                 pendientes.append({
                     "mesa_id": m.id,
-                    "mesa_numero": m.numero,
+                    "mesa_numero": mesa_numero_texto(m.numero),
                     "personero_nombre": personero.nombre_completo if personero else None,
                     "personero_estado": personero.estado if personero else None,
                     "modalidad_reporte": personero.modalidad_reporte if personero else None,

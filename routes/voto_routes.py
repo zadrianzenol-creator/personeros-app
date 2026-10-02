@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, request, jsonify, redirect, url_for, flash
 from flask_login import login_required, current_user
 from database import db, peru_now
-from models.personero import Colegio, Mesa, Personero
+from models.personero import Colegio, Mesa, Personero, mesa_numero_texto
 from models.voto import Voto, VotoEspecial, PARTIDOS, CARGOS
 from models.activity import ActivityLog
 
@@ -63,7 +63,7 @@ def registrar_votos():
             ).first()
             if personero_mesa and personero_mesa.modalidad_reporte != "ASISTIDO_DIGITADOR":
                 flash(
-                    f"La Mesa {mesa.numero} tiene un personero con modalidad directo al sistema. "
+                    f"La Mesa {mesa_numero_texto(mesa.numero)} tiene un personero con modalidad directo al sistema. "
                     "El registro de votos de esa mesa lo hace el propio personero, no el digitador.",
                     "error",
                 )
@@ -75,7 +75,7 @@ def registrar_votos():
         )
         if ya_registrado and es_digitador:
             flash(
-                f"Los votos de {cargo_info['nombre']} para la Mesa {mesa.numero} ya fueron "
+                f"Los votos de {cargo_info['nombre']} para la Mesa {mesa_numero_texto(mesa.numero)} ya fueron "
                 "registrados anteriormente. No se puede volver a registrar la misma mesa y cargo. "
                 "Si son incorrectos, comuniquese con el administrador para corregirlos.",
                 "error",
@@ -346,7 +346,7 @@ def exportar_excel():
         ws.cell(row=row, column=1, value=v.partido_nombre).border = thin_border
         ws.cell(row=row, column=2, value=v.partido_sigla).border = thin_border
         ws.cell(row=row, column=3, value=v.cargo).border = thin_border
-        ws.cell(row=row, column=4, value=v.mesa.numero if v.mesa else 0).border = thin_border
+        ws.cell(row=row, column=4, value=mesa_numero_texto(v.mesa.numero) if v.mesa else "").border = thin_border
         c = ws.cell(row=row, column=5, value=v.votos)
         c.number_format = number_format
         c.border = thin_border
@@ -377,7 +377,7 @@ def exportar_excel():
     for e in especiales:
         ws2.cell(row=row, column=1, value=e.tipo).border = thin_border
         ws2.cell(row=row, column=2, value=e.cargo).border = thin_border
-        ws2.cell(row=row, column=3, value=e.mesa.numero if e.mesa else 0).border = thin_border
+        ws2.cell(row=row, column=3, value=mesa_numero_texto(e.mesa.numero) if e.mesa else "").border = thin_border
         c = ws2.cell(row=row, column=4, value=e.cantidad)
         c.number_format = number_format
         c.border = thin_border

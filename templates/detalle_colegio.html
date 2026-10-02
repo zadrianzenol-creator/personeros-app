@@ -39,7 +39,7 @@
     {% for mesa in mesas %}
     {% set count = personeros | selectattr('mesa_id', 'equalto', mesa.id) | list | length %}
     <div class="mesa-card {{ 'con-personero' if count > 0 }}">
-        <h4>Mesa {{ mesa.numero }}</h4>
+        <h4>Mesa {{ mesa.numero|mesa_num }}</h4>
         <div class="mesa-count">{{ count }}</div>
         <p style="font-size:0.75rem; color:var(--text-muted);">personero(s)</p>
     </div>
@@ -76,7 +76,7 @@
                 <tr>
                     <td data-label="Nombre" style="font-weight:600; color:var(--text-primary);">{{ p.nombre_completo }}</td>
                     <td data-label="DNI" style="font-family:monospace;">{{ p.dni }}</td>
-                    <td data-label="Mesa"><strong>{{ p.numero_mesa }}</strong></td>
+                    <td data-label="Mesa"><strong>{{ p.numero_mesa|mesa_num }}</strong></td>
                     <td data-label="Hora">{{ p.hora_llegada or '—' }}</td>
                     <td data-label="Estado"><span class="badge badge-{{ p.estado.lower() }}">{{ p.estado }}</span></td>
                     <td data-label="Incidente">{{ p.incidente or 'NINGUNO' }}</td>

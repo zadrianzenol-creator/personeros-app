@@ -33,6 +33,12 @@ def create_app():
     app.register_blueprint(main_bp)
     app.register_blueprint(votos_bp, url_prefix="/votos")
 
+    from models.personero import mesa_numero_texto
+
+    @app.template_filter("mesa_num")
+    def mesa_num_filter(value):
+        return mesa_numero_texto(value)
+
     ENDPOINTS_PERMITIDOS_DIGITADOR = {
         "votos.registrar_votos",
         "votos.api_mesas",
@@ -81,6 +87,15 @@ def create_app():
     return app
 
 
+# Personeros del padron que reportan con digitador asistencia en vez de
+# informar directo al sistema. Se aplica al seed y se reaplica en cada
+# arranque para que el dato llegue a cualquier base donde se despliegue.
+DNIS_ASISTIDO_DIGITADOR = frozenset({
+    "60811039", "03309298", "03312670", "42059550", "70792656",
+    "70792640", "03372976",
+})
+
+
 def seed_from_json():
     from models.personero import Colegio, Mesa, Personero
 
@@ -97,6 +112,7 @@ def seed_from_json():
 
     locales = data.get("locales", {})
     mesas_map = data.get("mesas", {})
+    direcciones = data.get("direcciones", {})
     personeros_list = data.get("personeros", [])
 
     local_ids = {}
@@ -105,7 +121,7 @@ def seed_from_json():
         colegio = Colegio(
             codigo=f"COL-{local_id}",
             nombre=nombre,
-            direccion="Chulucanas",
+            direccion=direcciones.get(local_id) or "Chulucanas",
             distrito="Chulucanas",
         )
         db.session.add(colegio)
@@ -138,6 +154,10 @@ def seed_from_json():
             numero_mesa=mesa_num,
             estado="PENDIENTE",
             incidente="NINGUNO",
+            modalidad_reporte=(
+                "ASISTIDO_DIGITADOR" if dni in DNIS_ASISTIDO_DIGITADOR
+                else "DIRECTO_SISTEMA"
+            ),
         )
         db.session.add(personero)
         num += 1
@@ -187,21 +207,9 @@ with app.app_context():
         except Exception:
             pass
         try:
-            # DNIs cargados en el padron con modalidad de reporte ASISTIDO_DIGITADOR
-            # (el resto queda con el valor por defecto DIRECTO_SISTEMA). Se reaplica
-            # en cada arranque para que el dato llegue a cualquier base de datos
-            # donde se despliegue el sistema, sin depender de un script manual.
-            dnis_asistido_digitador = [
-                "60811039", "74352600", "70585798", "40665454", "42187975",
-                "03309298", "70840025", "03372755", "70853935", "03377866",
-                "03312670", "03304653", "40224194", "73462909", "74592169",
-                "73323943", "42059550", "03313238", "41401543", "70792656",
-                "74896317", "70792640", "76181142", "80277714", "03853912",
-                "42414980", "76636517", "45238202", "03311581", "73017017",
-                "75470138", "74624224", "74249273", "74504398", "71509942",
-                "61303442", "75219165", "03372976", "80444738",
-            ]
-            for dni in dnis_asistido_digitador:
+            # Reaplica la modalidad ASISTIDO_DIGITADOR sobre personeros ya
+            # cargados (por ejemplo si se actualizo la lista a posteriori).
+            for dni in DNIS_ASISTIDO_DIGITADOR:
                 conn.execute(
                     db.text("UPDATE personeros SET modalidad_reporte='ASISTIDO_DIGITADOR' WHERE dni=:dni"),
                     {"dni": dni},

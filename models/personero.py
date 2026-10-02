@@ -1,5 +1,15 @@
 from database import db, peru_now
 
+MESA_NUMERO_DIGITOS = 6
+
+
+def mesa_numero_texto(numero):
+    """Muestra el numero de mesa con el formato oficial del padron (071390)."""
+    try:
+        return f"{int(numero):0{MESA_NUMERO_DIGITOS}d}"
+    except (TypeError, ValueError):
+        return str(numero) if numero else ""
+
 
 class Colegio(db.Model):
     __tablename__ = "colegios"
@@ -42,12 +52,12 @@ class Mesa(db.Model):
     personeros = db.relationship("Personero", backref="mesa", lazy="dynamic")
 
     def __repr__(self):
-        return f"<Mesa {self.numero} - {self.colegio.nombre}>"
+        return f"<Mesa {mesa_numero_texto(self.numero)} - {self.colegio.nombre}>"
 
     def to_dict(self):
         return {
             "id": self.id,
-            "numero": self.numero,
+            "numero": mesa_numero_texto(self.numero),
             "colegio_id": self.colegio_id,
             "colegio_nombre": self.colegio.nombre,
             "capacidad": self.capacidad,
@@ -92,7 +102,7 @@ class Personero(db.Model):
             "colegio": self.colegio.nombre if self.colegio else "",
             "colegio_codigo": self.colegio.codigo if self.colegio else "",
             "mesa_id": self.mesa_id,
-            "numero_mesa": self.numero_mesa,
+            "numero_mesa": mesa_numero_texto(self.numero_mesa),
             "estado": self.estado,
             "incidente": self.incidente,
             "fecha_registro": self.fecha_registro.strftime("%d/%m/%Y") if self.fecha_registro else "",

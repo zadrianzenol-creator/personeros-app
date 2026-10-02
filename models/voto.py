@@ -1,4 +1,5 @@
 from database import db, peru_now
+from models.personero import mesa_numero_texto
 
 
 PARTIDOS = [
@@ -132,7 +133,7 @@ class Voto(db.Model):
             "mesa_id": self.mesa_id,
             "colegio_id": self.colegio_id,
             "colegio_nombre": self.colegio.nombre if self.colegio else "",
-            "mesa_numero": self.mesa.numero if self.mesa else 0,
+            "mesa_numero": mesa_numero_texto(self.mesa.numero) if self.mesa else "",
             "partido_id": self.partido_id,
             "partido_nombre": self.partido_nombre,
             "partido_sigla": self.partido_sigla,
@@ -167,7 +168,7 @@ class VotoEspecial(db.Model):
             "mesa_id": self.mesa_id,
             "colegio_id": self.colegio_id,
             "colegio_nombre": self.colegio.nombre if self.colegio else "",
-            "mesa_numero": self.mesa.numero if self.mesa else 0,
+            "mesa_numero": mesa_numero_texto(self.mesa.numero) if self.mesa else "",
             "cargo": self.cargo,
             "tipo": self.tipo,
             "cantidad": self.cantidad,

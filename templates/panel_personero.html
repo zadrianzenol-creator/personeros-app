@@ -8,7 +8,7 @@
         <div class="pp-hero-avatar">{{ personero.nombre_completo[:1].upper() }}</div>
         <div class="pp-hero-info">
             <h2>{{ personero.nombre_completo }}</h2>
-            <p>DNI: {{ personero.dni }} &mdash; {{ personero.colegio.nombre if personero.colegio else '' }} &mdash; Mesa {{ personero.numero_mesa }}</p>
+            <p>DNI: {{ personero.dni }} &mdash; {{ personero.colegio.nombre if personero.colegio else '' }} &mdash; Mesa {{ personero.numero_mesa|mesa_num }}</p>
         </div>
     </div>
 
