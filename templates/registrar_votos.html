@@ -308,8 +308,8 @@ function cargarMesas() {
     ocultarAvisoRegistrado();
     ocultarPersoneroMesa();
     mesasCargadas = [];
-    if (!colegioId) { selectMesa.innerHTML = '<option value="">Seleccione mesa...</option>'; return; }
-    fetch('/votos/api/mesas/' + colegioId)
+    if (!colegioId) { selectMesa.innerHTML = '<option value="">Seleccione mesa...</option>'; return Promise.resolve(); }
+    return fetch('/votos/api/mesas/' + colegioId)
         .then(r => r.json())
         .then(mesas => {
             mesasCargadas = mesas;
@@ -453,5 +453,29 @@ document.getElementById('formVotos').addEventListener('submit', function(e) {
         alert('Esta mesa y cargo ya tienen votos registrados. No se puede volver a registrar.');
     }
 });
+
+// Si venimos de guardar (o de un enlace con colegio/mesa/cargo en la URL),
+// se reseleccionan automaticamente para mostrar de inmediato los valores
+// que quedaron guardados, en vez de dejar el formulario en blanco.
+const PRESELECCION = {
+    colegio_id: {{ (preseleccion.colegio_id or '') | tojson }},
+    mesa_id: {{ (preseleccion.mesa_id or '') | tojson }},
+    cargo: {{ (preseleccion.cargo or '') | tojson }},
+};
+
+if (PRESELECCION.colegio_id) {
+    document.getElementById('selectColegio').value = String(PRESELECCION.colegio_id);
+    cargarMesas().then(() => {
+        if (PRESELECCION.mesa_id) {
+            document.getElementById('selectMesa').value = String(PRESELECCION.mesa_id);
+            mostrarPersoneroMesa();
+        }
+        if (PRESELECCION.cargo) {
+            document.getElementById('selectCargo').value = PRESELECCION.cargo;
+            cambiarCargo();
+        }
+        verificarVotosExistentes();
+    });
+}
 </script>
 {% endblock %}

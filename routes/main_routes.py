@@ -495,7 +495,7 @@ def api_personeros():
     if fecha:
         try:
             f = datetime.strptime(fecha, "%Y-%m-%d").date()
-            query = query.filter(db.func.date(Personero.fecha_registro) == f)
+            query = query.filter(db.cast(Personero.fecha_registro, db.Date) == f)
         except ValueError:
             pass
     if search:
@@ -669,7 +669,7 @@ def api_monitoreo_actividad():
     if fecha:
         try:
             f = datetime.strptime(fecha, "%Y-%m-%d").date()
-            query = query.filter(db.func.date(ActivityLog.fecha) == f)
+            query = query.filter(db.cast(ActivityLog.fecha, db.Date) == f)
         except ValueError:
             pass
 
@@ -749,12 +749,12 @@ def api_monitoreo_resumen():
 
     checkins_hoy = ActivityLog.query.filter(
         ActivityLog.tipo == "CHECK_IN",
-        db.func.date(ActivityLog.fecha) == hoy,
+        db.cast(ActivityLog.fecha, db.Date) == hoy,
     ).count()
 
     votos_hoy = ActivityLog.query.filter(
         ActivityLog.tipo == "VOTOS_GUARDADOS",
-        db.func.date(ActivityLog.fecha) == hoy,
+        db.cast(ActivityLog.fecha, db.Date) == hoy,
     ).count()
 
     total_votos_partidos = db.session.query(
@@ -772,7 +772,7 @@ def api_monitoreo_resumen():
         db.func.count(db.case((Personero.estado == "AUSENTE", 1))),
     ).outerjoin(Personero, Personero.colegio_id == Colegio.id).filter(
         Colegio.is_active == True
-    ).group_by(Colegio.id).all()
+    ).group_by(Colegio.id, Colegio.nombre).all()
 
     colegios_stats = []
     for nombre, total, pres, aus in por_colegio:

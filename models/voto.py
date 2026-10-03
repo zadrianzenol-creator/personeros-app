@@ -7,7 +7,6 @@ PARTIDOS = [
     {"id": 2, "nombre": "Alianza Electoral Venceremos", "sigla": "VE", "imagen": "alianza_electoral_venceremos.png"},
     {"id": 3, "nombre": "Alianza para el Progreso", "sigla": "APP", "imagen": "alianza_para_el_progreso.png"},
     {"id": 4, "nombre": "Frente Popular Agricola del Peru", "sigla": "FREPAP", "imagen": "frente_popular_agricola_fia_del_peru.png"},
-    {"id": 5, "nombre": "Fuerza Ciudadana", "sigla": "FC", "imagen": "fuerza_ciudadana.png"},
     {"id": 6, "nombre": "Fuerza Popular", "sigla": "FP", "imagen": "fuerza_popular.png"},
     {"id": 7, "nombre": "Fuerza Regional", "sigla": "FR", "imagen": "fuerza_regional.png"},
     {"id": 8, "nombre": "Partido Aprista Peruano", "sigla": "APRA", "imagen": "partido_aprista_peruano.png"},
@@ -16,41 +15,43 @@ PARTIDOS = [
     {"id": 11, "nombre": "Partido Pais para Todos", "sigla": "PPT", "imagen": "partido_pais_para_todos.png"},
     {"id": 12, "nombre": "Partido Patriotico del Peru", "sigla": "PPP", "imagen": "partido_patriotico_del_peru.png"},
     {"id": 13, "nombre": "Partido Politico Peru Primero", "sigla": "PP", "imagen": "partido_politico_peru_primero.png"},
-    {"id": 14, "nombre": "Partido Politico Pueblo Consciente", "sigla": "PPC", "imagen": "partido_politico_pueblo_consciente.png"},
-    {"id": 15, "nombre": "Partido Popular Cristiano", "sigla": "PPK", "imagen": "partido_popular_cristiano.png"},
+    {"id": 15, "nombre": "Partido Popular Cristiano", "sigla": "PPC", "imagen": "partido_popular_cristiano.png"},
     {"id": 16, "nombre": "Podemos Peru", "sigla": "PodP", "imagen": "podemos_peru.png"},
-    {"id": 17, "nombre": "Progresemos", "sigla": "PRO", "imagen": "progresemos.png"},
     {"id": 18, "nombre": "Renovacion Popular", "sigla": "RP", "imagen": "renovacion_popular.png"},
-    {"id": 19, "nombre": "Salvemos al Peru", "sigla": "SP", "imagen": "salvemos_al_peru.png"},
+    {"id": 19, "nombre": "Salvemos al Peru", "sigla": "SAP", "imagen": "salvemos_al_peru.png"},
     {"id": 20, "nombre": "Vision Peru", "sigla": "VP", "imagen": "vision_peru.png"},
+    {"id": 21, "nombre": "Ahora Nacion", "sigla": "AN", "imagen": "ahora_nacion.png"},
+    {"id": 22, "nombre": "Batalla Peru", "sigla": "BP", "imagen": "batalla_peru.png"},
+    {"id": 23, "nombre": "Partido Civico Obras", "sigla": "OBRAS", "imagen": "partido_civico_obras.png"},
 ]
 
 _PARTIDOS_POR_ID = {p["id"]: p for p in PARTIDOS}
 
-# Orden y presencia de cada partido tal como aparece en la cedula de votacion
-# (columna Gobernador = todos; Consejero y Provincia solo incluyen los que
-# realmente figuran impresos en esa columna, en el mismo orden de la cedula).
+# Orden y presencia de cada partido tal como aparece en la cedula oficial de
+# votacion (Elecciones Regionales y Municipales 2026, Piura - Provincia de
+# Morropon). La columna Gobernador/Consejero/Provincia solo incluyen los que
+# realmente figuran impresos en esa columna, en el mismo orden de la cedula.
 ORDEN_CEDULA = [
-    {"id": 3, "regional": True, "consejero": True, "provincia": True},    # Alianza para el Progreso
+    {"id": 3, "regional": True, "consejero": True, "provincia": True},     # Alianza para el Progreso
     {"id": 19, "regional": True, "consejero": False, "provincia": False},  # Salvemos al Peru
-    {"id": 1, "regional": True, "consejero": True, "provincia": True},    # Accion Popular
-    {"id": 18, "regional": True, "consejero": False, "provincia": False},  # Renovacion Popular
+    {"id": 1, "regional": True, "consejero": True, "provincia": False},    # Accion Popular
+    {"id": 18, "regional": True, "consejero": False, "provincia": True},   # Renovacion Popular
     {"id": 15, "regional": True, "consejero": True, "provincia": True},    # Partido Popular Cristiano
-    {"id": 20, "regional": True, "consejero": False, "provincia": True},  # Vision Peru
-    {"id": 4, "regional": True, "consejero": True, "provincia": False},   # Frente Popular Agricola
-    {"id": 6, "regional": True, "consejero": True, "provincia": True},    # Fuerza Popular
+    {"id": 20, "regional": True, "consejero": True, "provincia": True},    # Vision Peru
+    {"id": 4, "regional": True, "consejero": True, "provincia": False},    # Frente Popular Agricola
+    {"id": 6, "regional": True, "consejero": True, "provincia": False},    # Fuerza Popular
     {"id": 10, "regional": True, "consejero": False, "provincia": False},  # Partido de los Trabajadores
     {"id": 13, "regional": True, "consejero": True, "provincia": True},    # Partido Politico Peru Primero
-    {"id": 12, "regional": True, "consejero": True, "provincia": True},    # Partido Patriotico del Peru
-    {"id": 5, "regional": True, "consejero": False, "provincia": False},  # Fuerza Ciudadana
+    {"id": 12, "regional": True, "consejero": False, "provincia": False},  # Partido Patriotico del Peru
     {"id": 11, "regional": True, "consejero": True, "provincia": False},   # Partido Pais para Todos
-    {"id": 17, "regional": True, "consejero": True, "provincia": True},    # Progresemos
-    {"id": 14, "regional": True, "consejero": False, "provincia": False},  # Pueblo Consciente
-    {"id": 9, "regional": True, "consejero": True, "provincia": True},    # Partido Democratico Somos Peru
-    {"id": 8, "regional": True, "consejero": False, "provincia": True},   # Partido Aprista Peruano
+    {"id": 9, "regional": True, "consejero": True, "provincia": True},     # Partido Democratico Somos Peru
+    {"id": 8, "regional": True, "consejero": False, "provincia": True},    # Partido Aprista Peruano
     {"id": 16, "regional": True, "consejero": True, "provincia": True},    # Podemos Peru
-    {"id": 2, "regional": True, "consejero": True, "provincia": True},    # Alianza Electoral Venceremos
-    {"id": 7, "regional": True, "consejero": True, "provincia": True},    # Fuerza Regional
+    {"id": 2, "regional": False, "consejero": True, "provincia": False},   # Alianza Electoral Venceremos
+    {"id": 7, "regional": True, "consejero": True, "provincia": True},     # Fuerza Regional
+    {"id": 21, "regional": False, "consejero": False, "provincia": True},  # Ahora Nacion
+    {"id": 22, "regional": False, "consejero": False, "provincia": True},  # Batalla Peru
+    {"id": 23, "regional": False, "consejero": False, "provincia": True},  # Partido Civico Obras
 ]
 
 

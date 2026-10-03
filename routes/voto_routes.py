@@ -92,23 +92,24 @@ def registrar_votos():
             if valor is None or valor < 0:
                 flash("Los votos deben ser numeros no negativos.", "error")
                 return redirect(url_for("votos.registrar_votos"))
-            if valor > 0:
-                existing = Voto.query.filter_by(
-                    mesa_id=mesa_id, partido_id=partido_id, cargo=cargo_id,
-                ).first()
-                if existing:
-                    existing.votos = valor
-                else:
-                    db.session.add(Voto(
-                        mesa_id=mesa_id,
-                        colegio_id=colegio_id,
-                        partido_id=partido_id,
-                        partido_nombre=partido["nombre"],
-                        partido_sigla=partido["sigla"],
-                        cargo=cargo_id,
-                        votos=valor,
-                        registrado_por=current_user.id,
-                    ))
+            existing = Voto.query.filter_by(
+                mesa_id=mesa_id, partido_id=partido_id, cargo=cargo_id,
+            ).first()
+            if existing:
+                # Se actualiza siempre, incluso si el nuevo valor es 0, para
+                # que una correccion a la baja (o a cero) quede guardada.
+                existing.votos = valor
+            elif valor > 0:
+                db.session.add(Voto(
+                    mesa_id=mesa_id,
+                    colegio_id=colegio_id,
+                    partido_id=partido_id,
+                    partido_nombre=partido["nombre"],
+                    partido_sigla=partido["sigla"],
+                    cargo=cargo_id,
+                    votos=valor,
+                    registrado_por=current_user.id,
+                ))
 
         tipos_especiales = ["BLANCO", "NULO", "IMPUGNADO"]
         for tipo in tipos_especiales:
@@ -145,9 +146,22 @@ def registrar_votos():
             f"Votos de {cargo_info['nombre']} {'corregidos' if es_correccion else 'registrados'} exitosamente.",
             "success",
         )
-        return redirect(url_for("votos.registrar_votos"))
+        # Se vuelve a la misma mesa/cargo (no a un formulario en blanco) para
+        # que quede visible de inmediato que los valores guardados son los
+        # que se acaban de ingresar.
+        return redirect(url_for(
+            "votos.registrar_votos",
+            colegio_id=colegio_id, mesa_id=mesa_id, cargo=cargo_id,
+        ))
 
-    return render_template("registrar_votos.html", colegios=colegios, cargos=CARGOS)
+    preseleccion = {
+        "colegio_id": request.args.get("colegio_id", type=int),
+        "mesa_id": request.args.get("mesa_id", type=int),
+        "cargo": request.args.get("cargo", "").strip(),
+    }
+    return render_template(
+        "registrar_votos.html", colegios=colegios, cargos=CARGOS, preseleccion=preseleccion,
+    )
 
 
 @votos_bp.route("/api/votos-existen")
@@ -254,7 +268,18 @@ def api_votos_resumen_por_cargo():
             query = query.filter_by(mesa_id=mesa_id)
             query_especial = query_especial.filter_by(mesa_id=mesa_id)
 
+        # Se parte de TODOS los partidos activos para este cargo (aunque aun
+        # no tengan votos registrados), para que la lista no quede incompleta.
         votos_por_partido = {}
+        for p in cargo["partidos"]:
+            if p["activo"]:
+                votos_por_partido[p["nombre"]] = {
+                    "sigla": p["sigla"],
+                    "votos": 0,
+                    "id": p["id"],
+                    "imagen": p["imagen"],
+                }
+
         for v in query.all():
             if v.partido_nombre not in votos_por_partido:
                 partido_info = next((p for p in PARTIDOS if p["id"] == v.partido_id), None)
@@ -307,6 +332,20 @@ def exportar_excel():
     votos = query_votos.order_by(Voto.cargo, Voto.partido_nombre).all()
     especiales = query_especial.order_by(VotoEspecial.cargo).all()
 
+    mesa_ids = {v.mesa_id for v in votos} | {e.mesa_id for e in especiales}
+    personero_por_mesa = {}
+    if mesa_ids:
+        for p in Personero.query.filter(
+            Personero.mesa_id.in_(mesa_ids), Personero.estado != "REEMPLAZADO"
+        ).all():
+            personero_por_mesa.setdefault(p.mesa_id, p)
+
+    def _personero_info(mesa_id):
+        p = personero_por_mesa.get(mesa_id)
+        if not p:
+            return "", ""
+        return p.nombre_completo, p.dni
+
     wb = Workbook()
 
     header_font = Font(name="Calibri", bold=True, color="FFFFFF", size=11)
@@ -323,17 +362,17 @@ def exportar_excel():
     ws = wb.active
     ws.title = "Resumen por Partido"
 
-    ws.merge_cells("A1:E1")
+    ws.merge_cells("A1:H1")
     ws["A1"] = "REPORTE DE VOTOS - ELECCIONES 2026"
     ws["A1"].font = Font(name="Calibri", bold=True, size=14, color="4F46E5")
     ws["A1"].alignment = Alignment(horizontal="center")
 
-    ws.merge_cells("A2:E2")
+    ws.merge_cells("A2:H2")
     ws["A2"] = f"Generado: {peru_now().strftime('%d/%m/%Y %H:%M')}"
     ws["A2"].font = Font(name="Calibri", size=10, color="6B7280")
     ws["A2"].alignment = Alignment(horizontal="center")
 
-    headers = ["Partido", "Sigla", "Cargo", "Mesa", "Votos"]
+    headers = ["Partido", "Sigla", "Cargo", "Colegio", "Mesa", "Personero", "DNI Personero", "Fecha Registro", "Votos"]
     for col, h in enumerate(headers, 1):
         cell = ws.cell(row=4, column=col, value=h)
         cell.font = header_font
@@ -343,29 +382,38 @@ def exportar_excel():
 
     row = 5
     for v in votos:
+        personero_nombre, personero_dni = _personero_info(v.mesa_id)
         ws.cell(row=row, column=1, value=v.partido_nombre).border = thin_border
         ws.cell(row=row, column=2, value=v.partido_sigla).border = thin_border
         ws.cell(row=row, column=3, value=v.cargo).border = thin_border
-        ws.cell(row=row, column=4, value=mesa_numero_texto(v.mesa.numero) if v.mesa else "").border = thin_border
-        c = ws.cell(row=row, column=5, value=v.votos)
+        ws.cell(row=row, column=4, value=v.colegio.nombre if v.colegio else "").border = thin_border
+        ws.cell(row=row, column=5, value=mesa_numero_texto(v.mesa.numero) if v.mesa else "").border = thin_border
+        ws.cell(row=row, column=6, value=personero_nombre).border = thin_border
+        ws.cell(row=row, column=7, value=personero_dni).border = thin_border
+        ws.cell(row=row, column=8, value=v.fecha_registro.strftime("%d/%m/%Y %H:%M") if v.fecha_registro else "").border = thin_border
+        c = ws.cell(row=row, column=9, value=v.votos)
         c.number_format = number_format
         c.border = thin_border
         row += 1
 
-    ws.column_dimensions["A"].width = 40
+    ws.column_dimensions["A"].width = 38
     ws.column_dimensions["B"].width = 10
-    ws.column_dimensions["C"].width = 18
-    ws.column_dimensions["D"].width = 10
-    ws.column_dimensions["E"].width = 12
+    ws.column_dimensions["C"].width = 16
+    ws.column_dimensions["D"].width = 36
+    ws.column_dimensions["E"].width = 10
+    ws.column_dimensions["F"].width = 32
+    ws.column_dimensions["G"].width = 14
+    ws.column_dimensions["H"].width = 16
+    ws.column_dimensions["I"].width = 10
 
     ws2 = wb.create_sheet("Votos Especiales")
 
-    ws2.merge_cells("A1:D1")
+    ws2.merge_cells("A1:G1")
     ws2["A1"] = "VOTOS ESPECIALES"
     ws2["A1"].font = Font(name="Calibri", bold=True, size=14, color="4F46E5")
     ws2["A1"].alignment = Alignment(horizontal="center")
 
-    headers2 = ["Tipo", "Cargo", "Mesa", "Cantidad"]
+    headers2 = ["Tipo", "Cargo", "Colegio", "Mesa", "Personero", "DNI Personero", "Cantidad"]
     for col, h in enumerate(headers2, 1):
         cell = ws2.cell(row=3, column=col, value=h)
         cell.font = header_font
@@ -375,18 +423,25 @@ def exportar_excel():
 
     row = 4
     for e in especiales:
+        personero_nombre, personero_dni = _personero_info(e.mesa_id)
         ws2.cell(row=row, column=1, value=e.tipo).border = thin_border
         ws2.cell(row=row, column=2, value=e.cargo).border = thin_border
-        ws2.cell(row=row, column=3, value=mesa_numero_texto(e.mesa.numero) if e.mesa else "").border = thin_border
-        c = ws2.cell(row=row, column=4, value=e.cantidad)
+        ws2.cell(row=row, column=3, value=e.colegio.nombre if e.colegio else "").border = thin_border
+        ws2.cell(row=row, column=4, value=mesa_numero_texto(e.mesa.numero) if e.mesa else "").border = thin_border
+        ws2.cell(row=row, column=5, value=personero_nombre).border = thin_border
+        ws2.cell(row=row, column=6, value=personero_dni).border = thin_border
+        c = ws2.cell(row=row, column=7, value=e.cantidad)
         c.number_format = number_format
         c.border = thin_border
         row += 1
 
-    ws2.column_dimensions["A"].width = 18
-    ws2.column_dimensions["B"].width = 18
-    ws2.column_dimensions["C"].width = 10
-    ws2.column_dimensions["D"].width = 14
+    ws2.column_dimensions["A"].width = 16
+    ws2.column_dimensions["B"].width = 16
+    ws2.column_dimensions["C"].width = 36
+    ws2.column_dimensions["D"].width = 10
+    ws2.column_dimensions["E"].width = 32
+    ws2.column_dimensions["F"].width = 14
+    ws2.column_dimensions["G"].width = 12
 
     ws3 = wb.create_sheet("Consolidado por Colegio")
 
@@ -462,6 +517,20 @@ def exportar_pdf():
     votos = query_votos.order_by(Voto.cargo, Voto.partido_nombre).all()
     especiales = query_especial.order_by(VotoEspecial.cargo).all()
 
+    mesa_ids = {v.mesa_id for v in votos} | {e.mesa_id for e in especiales}
+    personero_por_mesa = {}
+    if mesa_ids:
+        for p in Personero.query.filter(
+            Personero.mesa_id.in_(mesa_ids), Personero.estado != "REEMPLAZADO"
+        ).all():
+            personero_por_mesa.setdefault(p.mesa_id, p)
+
+    def _personero_info(mesa_id):
+        p = personero_por_mesa.get(mesa_id)
+        if not p:
+            return "", ""
+        return p.nombre_completo, p.dni
+
     pdf = FPDF(orientation="L", unit="mm", format="A4")
     pdf.set_auto_page_break(auto=True, margin=15)
 
@@ -494,39 +563,59 @@ def exportar_pdf():
         pdf.set_font("Helvetica", "B", 8)
         pdf.set_fill_color(79, 70, 229)
         pdf.set_text_color(255, 255, 255)
-        pdf.cell(80, 7, "Partido", border=1, fill=True, align="C")
-        pdf.cell(25, 7, "Sigla", border=1, fill=True, align="C")
-        pdf.cell(30, 7, "Votos", border=1, fill=True, align="C")
+        pdf.cell(50, 7, "Partido", border=1, fill=True, align="C")
+        pdf.cell(14, 7, "Sigla", border=1, fill=True, align="C")
+        pdf.cell(50, 7, "Colegio", border=1, fill=True, align="C")
+        pdf.cell(16, 7, "Mesa", border=1, fill=True, align="C")
+        pdf.cell(50, 7, "Personero", border=1, fill=True, align="C")
+        pdf.cell(26, 7, "Fecha Registro", border=1, fill=True, align="C")
+        pdf.cell(20, 7, "Votos", border=1, fill=True, align="C")
         pdf.ln()
 
-        pdf.set_font("Helvetica", "", 8)
+        pdf.set_font("Helvetica", "", 7)
         pdf.set_text_color(0, 0, 0)
         total_cargo = 0
         for v in cargo_votos:
-            pdf.cell(80, 6, v.partido_nombre[:40], border=1)
-            pdf.cell(25, 6, v.partido_sigla, border=1, align="C")
-            pdf.cell(30, 6, str(v.votos), border=1, align="C")
+            personero_nombre, _ = _personero_info(v.mesa_id)
+            fecha = v.fecha_registro.strftime("%d/%m/%Y %H:%M") if v.fecha_registro else ""
+            pdf.cell(50, 6, v.partido_nombre[:32], border=1)
+            pdf.cell(14, 6, v.partido_sigla, border=1, align="C")
+            pdf.cell(50, 6, (v.colegio.nombre if v.colegio else "")[:32], border=1)
+            pdf.cell(16, 6, mesa_numero_texto(v.mesa.numero) if v.mesa else "", border=1, align="C")
+            pdf.cell(50, 6, personero_nombre[:32], border=1)
+            pdf.cell(26, 6, fecha, border=1, align="C")
+            pdf.cell(20, 6, str(v.votos), border=1, align="C")
             pdf.ln()
             total_cargo += v.votos
 
         if cargo_especiales:
-            pdf.set_font("Helvetica", "B", 8)
-            pdf.cell(80, 6, "VOTOS ESPECIALES", border=1, fill=False)
-            pdf.cell(25, 6, "", border=1)
-            pdf.cell(30, 6, "", border=1)
+            pdf.set_font("Helvetica", "B", 7)
+            pdf.cell(50, 6, "VOTOS ESPECIALES", border=1, fill=False)
+            pdf.cell(14, 6, "", border=1)
+            pdf.cell(50, 6, "", border=1)
+            pdf.cell(16, 6, "", border=1)
+            pdf.cell(50, 6, "", border=1)
+            pdf.cell(26, 6, "", border=1)
+            pdf.cell(20, 6, "", border=1)
             pdf.ln()
-            pdf.set_font("Helvetica", "", 8)
+            pdf.set_font("Helvetica", "", 7)
             for e in cargo_especiales:
-                pdf.cell(80, 6, f"  {e.tipo}", border=1)
-                pdf.cell(25, 6, "", border=1, align="C")
-                pdf.cell(30, 6, str(e.cantidad), border=1, align="C")
+                personero_nombre, _ = _personero_info(e.mesa_id)
+                fecha = e.fecha_registro.strftime("%d/%m/%Y %H:%M") if e.fecha_registro else ""
+                pdf.cell(50, 6, f"  {e.tipo}", border=1)
+                pdf.cell(14, 6, "", border=1, align="C")
+                pdf.cell(50, 6, (e.colegio.nombre if e.colegio else "")[:32], border=1)
+                pdf.cell(16, 6, mesa_numero_texto(e.mesa.numero) if e.mesa else "", border=1, align="C")
+                pdf.cell(50, 6, personero_nombre[:32], border=1)
+                pdf.cell(26, 6, fecha, border=1, align="C")
+                pdf.cell(20, 6, str(e.cantidad), border=1, align="C")
                 pdf.ln()
                 total_cargo += e.cantidad
 
         pdf.set_font("Helvetica", "B", 9)
         pdf.set_fill_color(241, 245, 249)
-        pdf.cell(105, 7, f"TOTAL {cargo_nombre.upper()}", border=1, fill=True)
-        pdf.cell(30, 7, str(total_cargo), border=1, fill=True, align="C")
+        pdf.cell(206, 7, f"TOTAL {cargo_nombre.upper()}", border=1, fill=True)
+        pdf.cell(20, 7, str(total_cargo), border=1, fill=True, align="C")
         pdf.ln(10)
 
     total_votos_partidos = sum(v.votos for v in votos)

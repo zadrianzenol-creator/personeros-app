@@ -8,3 +8,4 @@ instance/
 *.db
 venv/
 .venv/
+deploy/*.log

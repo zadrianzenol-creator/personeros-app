@@ -73,7 +73,12 @@
                         {% endif %}
                     </td>
                     <td data-label="Creado">{{ u.created_at.strftime('%d/%m/%Y') if u.created_at else '-' }}</td>
-                    <td data-label="">
+                    <td data-label="" style="white-space:nowrap;">
+                        <button type="button" class="btn btn-sm btn-secondary"
+                            data-id="{{ u.id }}" data-username="{{ u.username }}" data-fullname="{{ u.full_name }}" data-role="{{ u.role }}"
+                            onclick="abrirModalEditar(this)">
+                            <i class="fas fa-pen"></i> Editar
+                        </button>
                         {% if u.id != current_user.id %}
                         <form method="POST" action="{{ url_for('auth.toggle_usuario', user_id=u.id) }}" style="display:inline;">
                             <button type="submit" class="btn btn-sm {% if u.is_active %}btn-danger{% else %}btn-success{% endif %}">
@@ -90,4 +95,99 @@
         </table>
     </div>
 </div>
+
+<div class="modal-overlay" id="modalEditarUsuario" style="display:none;">
+    <div class="modal-box">
+        <div class="modal-header">
+            <h3><i class="fas fa-user-pen"></i> Editar Usuario</h3>
+            <button type="button" class="modal-close" onclick="cerrarModalEditar()"><i class="fas fa-times"></i></button>
+        </div>
+        <p class="modal-subtitle">Deje la contrasena en blanco si no desea cambiarla.</p>
+        <form method="POST" id="formEditarUsuario">
+            <div class="form-group">
+                <label>Usuario <span class="req">*</span></label>
+                <input type="text" name="username" id="editUsername" required autocomplete="off">
+            </div>
+            <div class="form-group">
+                <label>Nombre completo <span class="req">*</span></label>
+                <input type="text" name="full_name" id="editFullName" required>
+            </div>
+            <div class="form-group">
+                <label>Rol <span class="req">*</span></label>
+                <select name="role" id="editRole" required>
+                    <option value="digitador">Digitador (solo Registrar Votos, mesas asistidas)</option>
+                    <option value="admin">Administrador (acceso total)</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Nueva contrasena</label>
+                <input type="password" name="password" id="editPassword" autocomplete="new-password" placeholder="Dejar en blanco para no cambiar">
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-secondary" onclick="cerrarModalEditar()">Cancelar</button>
+                <button type="submit" class="btn btn-success"><i class="fas fa-floppy-disk"></i> Guardar Cambios</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 16px;
+}
+.modal-box {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    padding: 22px;
+    width: 100%;
+    max-width: 440px;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+.modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 4px;
+}
+.modal-header h3 { font-size: 1rem; color: var(--text-primary); display: flex; align-items: center; gap: 8px; }
+.modal-close {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 1rem;
+    cursor: pointer;
+    padding: 4px;
+}
+.modal-subtitle { font-size: 0.82rem; color: var(--text-secondary); margin-bottom: 10px; }
+.modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 8px;
+}
+</style>
+
+<script>
+function abrirModalEditar(btn) {
+    document.getElementById('formEditarUsuario').action = '/auth/usuarios/' + btn.dataset.id + '/editar';
+    document.getElementById('editUsername').value = btn.dataset.username;
+    document.getElementById('editFullName').value = btn.dataset.fullname;
+    document.getElementById('editRole').value = btn.dataset.role;
+    document.getElementById('editPassword').value = '';
+    document.getElementById('modalEditarUsuario').style.display = 'flex';
+}
+
+function cerrarModalEditar() {
+    document.getElementById('modalEditarUsuario').style.display = 'none';
+}
+</script>
 {% endblock %}

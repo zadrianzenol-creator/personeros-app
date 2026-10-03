@@ -112,3 +112,44 @@ def toggle_usuario(user_id):
     db.session.commit()
     flash(f'Usuario "{usuario.username}" {"activado" if usuario.is_active else "desactivado"}.', "success")
     return redirect(url_for("auth.usuarios"))
+
+
+@auth_bp.route("/usuarios/<int:user_id>/editar", methods=["POST"])
+@login_required
+def editar_usuario(user_id):
+    if current_user.role != "admin":
+        abort(403)
+
+    usuario = User.query.get_or_404(user_id)
+
+    username = request.form.get("username", "").strip().lower()
+    full_name = request.form.get("full_name", "").strip()
+    role = request.form.get("role", "").strip()
+    password = request.form.get("password", "")
+
+    if not username or not full_name:
+        flash("Complete usuario y nombre completo.", "error")
+        return redirect(url_for("auth.usuarios"))
+
+    if role not in ROLES_VALIDOS:
+        flash("Rol invalido.", "error")
+        return redirect(url_for("auth.usuarios"))
+
+    if usuario.id == current_user.id and role != usuario.role:
+        flash("No puedes cambiar tu propio rol.", "error")
+        return redirect(url_for("auth.usuarios"))
+
+    duplicado = User.query.filter(User.username == username, User.id != usuario.id).first()
+    if duplicado:
+        flash(f'El usuario "{username}" ya existe.', "error")
+        return redirect(url_for("auth.usuarios"))
+
+    usuario.username = username
+    usuario.full_name = full_name
+    usuario.role = role
+    if password:
+        usuario.set_password(password)
+
+    db.session.commit()
+    flash(f'Usuario "{usuario.username}" actualizado correctamente.', "success")
+    return redirect(url_for("auth.usuarios"))
